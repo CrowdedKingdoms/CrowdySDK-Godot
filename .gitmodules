@@ -1,0 +1,9 @@
+[submodule "addons/CrowdyCPP/crowdycpp"]
+	path = addons/CrowdyCPP/crowdycpp
+	url = https://github.com/CrowdedKingdoms/CrowdyCPP
+[submodule "third_party/crowdycpp"]
+	path = third_party/crowdycpp
+	url = https://github.com/CrowdedKingdoms/CrowdyCPP.git
+[submodule "third_party/godotcpp"]
+	path = third_party/godotcpp
+	url = https://github.com/godotengine/godot-cpp.git

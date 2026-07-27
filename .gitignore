@@ -1,0 +1,129 @@
+# Visual Studio
+.vscode/
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+*.vcxproj.user
+*.ncb
+*.sdf
+*.opensdf
+*.cachefile
+bin/
+obj/
+Debug/
+Release/
+TestResults/
+*.ilk
+*.meta
+*.pdb
+*.log
+
+# Rider / IntelliJ
+.idea/
+*.iml
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# NuGet
+packages/
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+
+# MSBuild
+*.BuildArtifacts/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userprefs
+*.userosscache
+
+# DotCover
+*.dotCover
+
+# Godot
+.import/
+.godot/
+export_presets.cfg
+export_presets.cfg.user
+.mono/
+/*.mono_build/
+
+# Unity (some projects may not need this but it's harmless)
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+MemoryCaptures/
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.apk
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbs
+Thumbs.db
+ehthumbs.db
+
+# Logs
+logs/
+*.log
+
+# Certificates
+*.pfx
+*.cer
+
+# Archives
+*.zip
+*.7z
+*.gz
+*.tar
+
+# Build output
+_ReSharper*/
+ReSharperReport.xml
+*.DotSettings.user
+
+# Terraform
+.terraform/
+
+# JetBrains Rider caches
+.idea/
+/.idea
+
+# Coverage
+coverage/
+*.lcov
+
+# Lock files
+package-lock.json
+yarn.lock

@@ -1,0 +1,10 @@
+[configuration]
+name = "CrowdyCPP"
+entry_symbol = "crowdy_library_init"
+compatibility_minimum = "4.6"
+
+[libraries]
+windows.x86_64 = "res://addons/CrowdyCPP/bin/Windows/x86_64/CrowdyCPP.dll"
+
+[scripts]
+
