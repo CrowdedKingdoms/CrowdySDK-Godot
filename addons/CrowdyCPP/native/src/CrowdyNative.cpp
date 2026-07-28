@@ -8,12 +8,56 @@
 #include <string>
 #include <sstream>
 #include <memory>
+#include <thread>
 
 #include <crowdy/crowdy.hpp>
 #include <gdextension_interface.h>
 
 using namespace godot;
 namespace graphql = crowdy::graphql;
+
+// Simple threaded async transport for engines that don't provide one.
+// Runs the synchronous transport on a background thread and invokes the
+// completion callback when done. Callbacks may run on that background
+// thread; GraphQLClient will route them through its Dispatcher so they
+// execute on the game thread when poll() is called.
+namespace {
+class ThreadedAsyncTransport final : public crowdy::graphql::IAsyncHttpTransport {
+ public:
+  explicit ThreadedAsyncTransport(std::shared_ptr<crowdy::graphql::IHttpTransport> sync)
+	  : sync_(std::move(sync)) {}
+
+  void sendAsync(const crowdy::graphql::HttpRequest& request,
+				 std::function<void(crowdy::graphql::HttpOutcome)> cb) override {
+	auto sync = sync_;
+	// Launch a detached thread to avoid blocking the caller (Godot main
+	// thread). The callback is invoked on the worker thread; the
+	// GraphQLClient Dispatcher will move delivery to the poll() caller.
+	std::thread([sync, request, cb = std::move(cb)]() mutable {
+	  crowdy::graphql::HttpOutcome out;
+#ifndef CROWDY_NO_EXCEPTIONS
+	  try {
+		out.response = sync->send(request);
+		out.status = crowdy::Errc::Ok;
+	  } catch (const crowdy::graphql::CrowdyTimeoutError& e) {
+		out.status = crowdy::Errc::Timeout;
+		out.errorMessage = e.what();
+	  } catch (const std::exception& e) {
+		out.status = crowdy::Errc::SocketError;
+		out.errorMessage = e.what();
+	  }
+#else
+	  out.response = sync->send(request);
+	  out.status = crowdy::Errc::Ok;
+#endif
+	  cb(std::move(out));
+	}).detach();
+  }
+
+ private:
+  std::shared_ptr<crowdy::graphql::IHttpTransport> sync_;
+};
+} // namespace
 
 class CrowdyNative : public RefCounted {
   GDCLASS(CrowdyNative, RefCounted)
@@ -25,6 +69,12 @@ public:
 
 	CrowdyNative() {
 		crowdy::ClientConfig cfg;
+		// Ensure we have a synchronous transport to back the threaded async
+		// adapter. CrowdyClient would create a curl transport internally when
+		// cfg.transport is null, but we need the same sync transport instance
+		// to drive the background threads here.
+		cfg.transport = crowdy::graphql::makeCurlTransport();
+		cfg.asyncTransport = std::make_shared<ThreadedAsyncTransport>(cfg.transport);
 		client = std::make_unique<crowdy::CrowdyClient>(cfg);
 	}
 
@@ -33,6 +83,8 @@ public:
 	void set_management_url(const String& management_url) {
 		crowdy::ClientConfig cfg;
 		cfg.managementUrl = (std::string)management_url.utf8();
+		cfg.transport = crowdy::graphql::makeCurlTransport();
+		cfg.asyncTransport = std::make_shared<ThreadedAsyncTransport>(cfg.transport);
 		client = std::make_unique<crowdy::CrowdyClient>(cfg);
 	}
 
