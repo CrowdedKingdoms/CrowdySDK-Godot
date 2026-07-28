@@ -2,7 +2,7 @@ param(
 	[string]$Root = "",
 	[switch]$Godot,
 	[switch]$Crowdy,
-	[switch]$Extension
+	[switch]$All
 )
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -20,8 +20,15 @@ $crowdy_build_dir = Join-Path $root "third_party\crowdycpp\build"
 $ext_build_dir = Join-Path $root "addons\CrowdyCPP\native\build"
 
 # If no specific target flags were given, clean all
-if (-Not ($Godot.IsPresent -or $Crowdy.IsPresent -or $Extension.IsPresent)) {
-	$Godot = $true; $Crowdy = $true; $Extension = $true
+if (-Not ($Godot.IsPresent -or $Crowdy.IsPresent -or $All.IsPresent)) {
+	$Extension = $true
+}
+
+# -All overrides everything
+if ($All) {
+    $Godot = $true
+    $Crowdy = $true
+    $Extension = $true
 }
 
 function SafeRemove($path) {

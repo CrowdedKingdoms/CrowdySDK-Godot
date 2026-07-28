@@ -3,16 +3,119 @@ extends Node
 var management_url: String = "https://api.dev.crowdedkingdoms.com/graphql"
 var game_url: String = "https://game.shared.dev.cks-env.com/graphql"
 
+var session_token: String = ""
+var current_user: Dictionary = {}
+var native = CrowdyNative.new()
+
+signal login_completed(result)
+signal register_completed(result)
+signal logout_completed(result)
+signal dev_login_completed(result)
+
 func _ready():
-	pass
+	native.set_management_url(management_url)
+
+func _process(delta: float) -> void:
+	native.poll()
+
+func dev_login(email):
+	var res = native.dev_login(email)
+	var js = JSON.new()
+	var err = js.parse(res)
+	var data = {}
+	if err == OK:
+		data = js.get_data()
+		if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
+			session_token = data.token
+			current_user = data.user
+	return res
+	
+func dev_login_async(email):
+	var wrapper = func(raw):
+		var js = JSON.new()
+		var err = js.parse(raw)
+		var data = {}
+		if err == OK:
+			data = js.get_data()
+			if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
+				session_token = data.token
+				current_user = data.user
+		emit_signal("dev_login_completed", data)
+		
+	native.dev_login_async(email, Callable(wrapper))
 
 func login(email, password):
-	var native = CrowdyNative.new()
-	# Use dev_login for testing; replace with real login method when available
-	var res = native.dev_login(management_url, email)
-	print(res)
+	var res = native.login(email, password)
+	var js = JSON.new()
+	var err = js.parse(res)
+	var data = {}
+	if err == OK:
+		data = js.get_data()
+		if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
+			session_token = data.token
+			current_user = data.user
+	return res
 
-func _on_Register_pressed(email, password):
-	var native = CrowdyNative.new()
-	# Placeholder: CrowdyCPP registration endpoint not exposed in this wrapper yet
-	print("Register not implemented")
+func login_async(email, password, user_cb = null):
+	var wrapper = func(raw):
+		var js = JSON.new()
+		var err = js.parse(raw)
+		var data = {}
+		if err == OK:
+			data = js.get_data()
+			if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
+				session_token = data.token
+				current_user = data.user
+		emit_signal("login_completed", data)
+		
+	native.login_async(email, password, Callable(wrapper))
+
+func register(email, password, gamertag = ""):
+	var res = native.register_user(email, password, gamertag)
+	var js = JSON.new()
+	var err = js.parse(res)
+	var data = {}
+	if err == OK:
+		data = js.get_data()
+		if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
+			session_token = data.token
+			current_user = data.user
+	return res
+
+func register_async(email, password, gamertag = ""):
+	var wrapper = func(raw):
+		var js = JSON.new()
+		var err = js.parse(raw)
+		var data = {}
+		if err == OK:
+			data = js.get_data()
+			if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
+				session_token = data.token
+				current_user = data.user
+		emit_signal("register_completed", data)
+	native.register_user_async(email, password, gamertag, Callable(wrapper))
+
+func logout():
+	var res = native.logout()
+	var js = JSON.new()
+	var err = js.parse(res)
+	var data = {}
+	if err == OK:
+		data = js.get_data()
+		if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
+			session_token = ""
+			current_user = {}
+	return res
+
+func logout_async():
+	var wrapper = func(raw):
+		var js = JSON.new()
+		var err = js.parse(raw)
+		var data = {}
+		if err == OK:
+			data = js.get_data()
+			if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
+				session_token = ""
+				current_user = {}
+		emit_signal("logout_completed", data)
+	native.logout_async(Callable(wrapper))
