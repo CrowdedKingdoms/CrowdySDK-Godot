@@ -22,7 +22,6 @@ tonemap_mode = 2
 points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5)
 
 [node name="World" type="Node3D" unique_id=994897316]
-script = ExtResource("1_8xpg0")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2109781367]
 environment = SubResource("Environment_fn2sa")
@@ -34,6 +33,7 @@ shadow_enabled = true
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2019173541]
 transform = Transform3D(200, 0, 0, 0, 1, 0, 0, 0, 200, 0, 0, 0)
 mesh = SubResource("BoxMesh_iwxtu")
+script = ExtResource("1_8xpg0")
 
 [node name="StaticBody3D" type="StaticBody3D" parent="MeshInstance3D" unique_id=1078260054]
 

@@ -18,6 +18,7 @@ config/features=PackedStringArray("4.7")
 
 AuthService="*uid://d21thchikp8qp"
 CrowdyTest="*uid://dm1x3wkkxrhsk"
+ReplicationService="*uid://cml1ja58u6w8r"
 
 [input]
 

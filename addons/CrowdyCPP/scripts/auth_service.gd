@@ -1,6 +1,6 @@
 extends Node
 
-var management_url: String = "https://api.dev.crowdedkingdoms.com/graphql"
+var management_url: String = "https://game.shared.dev.cks-env.com/graphql"
 var game_url: String = "https://game.shared.dev.cks-env.com/graphql"
 
 var session_token: String = ""
@@ -13,7 +13,7 @@ signal logout_completed(result)
 signal dev_login_completed(result)
 
 func _ready():
-	native.set_management_url(management_url)
+	pass
 
 func _process(delta: float) -> void:
 	native.poll()
