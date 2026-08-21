@@ -3,8 +3,7 @@ extends Node
 # ReplicationService: high-level Godot wrapper for CrowdyCPP replication.
 # Mirrors the style of addons/CrowdyCPP/scripts/auth_service.gd
 
-var management_url: String = "https://game.shared.dev.cks-env.com/graphql"
-var native = CrowdyNative.new()
+var native = null
 
 signal replication_connected()
 signal replication_disconnected()
@@ -19,7 +18,9 @@ signal replication_status_changed(status)
 var _players := {}
 
 func _ready():
-	native.initialize(management_url)
+	if AuthService and AuthService.native:
+		native = AuthService.native
+		native.initialize(Config.game_api_url)
 	# register native callbacks
 	# Prefer lifecycle callbacks from the native SDK when available. The
 	# native wrapper forwards spatial notifications via replication_set_event_callback.
@@ -39,7 +40,7 @@ func _ready():
 func _on_login_completed(res):
 	print("replication _on_login_completed")
 	if typeof(res) == TYPE_DICTIONARY and res.has("ok") and res.ok:
-		ReplicationService.start_replication_async("151")
+		ReplicationService.start_replication_async(Config.app_id)
 
 func _process(delta: float) -> void:
 	native.poll()
@@ -58,6 +59,7 @@ func start_replication_async(app_id: String):
 		var err = js.parse(raw)
 		if err != OK:
 			emit_signal("replication_error", {"error":"invalid response"})
+			print("REPLICATION ERROR")
 			return
 		var data = js.get_data()
 		if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
@@ -71,7 +73,7 @@ func start_replication_async(app_id: String):
 			emit_signal("replication_error", data)
 
 	native.replication_connect_async(app_id, Callable(cb))
-	print("start_replication_async")
+	print("start_replication_async done")
 
 func get_self_uuid() -> String:
 	# Return local actor uuid as hex string from the native WorldSession, or
@@ -94,6 +96,7 @@ func replication_get_status():
 func get_players():
 	# returns array of dictionaries
 	var res = native.worldsession_get_actors()
+	print("get players: ", res)
 	var js = JSON.new()
 	if js.parse(res) == OK:
 		return js.get_data()
@@ -102,6 +105,7 @@ func get_players():
 # Sending helpers ---------------------------------------------------------
 func send_actor_update(uuid_hex: String, x: int, y: int, z: int, state_base64: String) -> Dictionary:
 	var res = native.replication_send_actor_update(uuid_hex, x, y, z, state_base64)
+	print("send_actor_update: ", res)
 	var js = JSON.new()
 	if js.parse(res) == OK:
 		return js.get_data()

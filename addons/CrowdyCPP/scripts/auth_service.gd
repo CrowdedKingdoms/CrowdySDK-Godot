@@ -1,8 +1,5 @@
 extends Node
 
-var management_url: String = "https://game.shared.dev.cks-env.com/graphql"
-var game_url: String = "https://game.shared.dev.cks-env.com/graphql"
-
 var session_token: String = ""
 var current_user: Dictionary = {}
 var native = CrowdyNative.new()

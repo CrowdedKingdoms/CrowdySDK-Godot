@@ -19,6 +19,13 @@ config/features=PackedStringArray("4.7")
 AuthService="*uid://d21thchikp8qp"
 CrowdyTest="*uid://dm1x3wkkxrhsk"
 ReplicationService="*uid://cml1ja58u6w8r"
+Config="*uid://bx26c7av7xmkc"
+
+[game]
+
+game_api_url="https://ck.test.v7.cks-env.com/graphql"
+app_id="82274011796736"
+ws_url="wss://ck.test.v7.cks-env.com"
 
 [input]
 

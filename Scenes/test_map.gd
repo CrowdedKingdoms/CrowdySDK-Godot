@@ -56,7 +56,7 @@ func _send_local_state():
 	var bytes = raw.to_utf8_buffer()
 	var b64 = Marshalls.raw_to_base64(bytes)
 	var resp = ReplicationService.send_actor_update(self_uuid, int(pos.x), int(pos.y), int(pos.z), b64)
-	#print(resp)
+	print("Repl resp: ", resp)
 
 # Remote player handlers
 func _on_player_joined(data):

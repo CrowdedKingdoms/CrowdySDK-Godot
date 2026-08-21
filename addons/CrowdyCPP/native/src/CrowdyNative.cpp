@@ -4,9 +4,9 @@
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/callable.hpp>
 #include <godot_cpp/variant/variant.hpp>
+#include <godot_cpp/core/error_macros.hpp>
 
 #include <vector>
-#include <iostream>
 #include <cstdint>
 #include <mutex>
 #include <string>
@@ -121,7 +121,8 @@ class CrowdyNative : public RefCounted {
 	GDCLASS(CrowdyNative, RefCounted)
 
 private:
-	std::unique_ptr<crowdy::CrowdyClient> client;
+	std::unique_ptr<crowdy::CrowdyClient> identityClient;
+	std::unique_ptr<crowdy::CrowdyClient> gameClient;
 
 	// Replication connection managed by this native wrapper (one at a time)
 	std::shared_ptr<crowdy::replication::Connection> replConn;
@@ -153,14 +154,23 @@ public:
 		// to drive the background threads here.
 		cfg.transport = crowdy::graphql::makeCurlTransport();
 		cfg.asyncTransport = std::make_shared<ThreadedAsyncTransport>(cfg.transport);
-		cfg.managementUrl = "https://api.dev.crowdedkingdoms.com/graphql";
-		client = std::make_unique<crowdy::CrowdyClient>(cfg);
+		cfg.httpUrl = "https://api.dev.crowdedkingdoms.com/graphql";
+		identityClient = std::make_unique<crowdy::CrowdyClient>(cfg);
 	}
 
 	void poll() {
 		// Single owner: native.poll() drives all SDK pumping. Do not call
 		// Connection::poll() or WorldSession::tick() from elsewhere.
-		client->poll();
+		if (identityClient)
+		{
+			identityClient->poll();
+		}
+
+		if (gameClient)
+		{
+			gameClient->poll();
+		}
+		
 		if (replConn) {
 			// Connection::poll() dispatches into handlers synchronously on the
 			// caller thread. WorldSession::tick() also calls connection.poll() as
@@ -251,11 +261,27 @@ public:
 	void initialize(const String& management_url) {
 		crowdy::ClientConfig cfg;
 
-		cfg.managementUrl = (std::string)management_url.utf8();
+		cfg.httpUrl = (std::string)management_url.utf8();
 		cfg.transport = crowdy::graphql::makeCurlTransport();
 		cfg.asyncTransport = std::make_shared<ThreadedAsyncTransport>(cfg.transport);
 
-		client = std::make_unique<crowdy::CrowdyClient>(cfg);
+		identityClient = std::make_unique<crowdy::CrowdyClient>(cfg);
+	}
+
+	void initializeGameClient(const crowdy::domains::AppTokenResponse& token) {
+		crowdy::ClientConfig cfg;
+
+		UtilityFunctions::print("minted token: ", String(token.token.c_str()));
+		UtilityFunctions::print("minted token httpUrl: ", String(token.gameApiUrl.get()->c_str()));
+		UtilityFunctions::print("minted token discovery: ", String(token.discoveryUrl.get()->c_str()));
+
+		cfg.httpUrl = (std::string)token.gameApiUrl;
+		cfg.discoveryUrl = (std::string)token.discoveryUrl;
+		cfg.transport = crowdy::graphql::makeCurlTransport();
+		cfg.asyncTransport = std::make_shared<ThreadedAsyncTransport>(cfg.transport);
+
+		gameClient = std::make_unique<crowdy::CrowdyClient>(cfg);
+		gameClient->setToken(token.token);
 	}
 
 	static void _bind_methods() {
@@ -263,8 +289,6 @@ public:
 		ClassDB::bind_method(D_METHOD("_invoke_callable", "callback", "res"), &CrowdyNative::_invoke_callable);
 		ClassDB::bind_method(D_METHOD("initialize", "management_url"), &CrowdyNative::initialize);
 		ClassDB::bind_method(D_METHOD("graphql_query", "endpoint", "query"), &CrowdyNative::graphql_query);
-		ClassDB::bind_method(D_METHOD("dev_login", "email"), &CrowdyNative::dev_login);
-		ClassDB::bind_method(D_METHOD("dev_login_async", "email"), &CrowdyNative::dev_login_async);
 		ClassDB::bind_method(D_METHOD("login", "email", "password"), &CrowdyNative::login);
 		ClassDB::bind_method(D_METHOD("login_async", "email", "password", "callback"), &CrowdyNative::login_async);
 		ClassDB::bind_method(D_METHOD("register_user", "email", "password", "gamertag"), &CrowdyNative::register_user);
@@ -294,58 +318,15 @@ public:
 		ClassDB::bind_method(D_METHOD("replication_send_single_actor_message", "x", "y", "z", "target_uuid_hex", "payload_base64"), &CrowdyNative::replication_send_single_actor_message);
 	}
 
-	// DEV-only convenience: perform devLogin(email) against the management URL
-	// and return a small JSON result with token and user info.
-	String dev_login(const String& email) {
-		try {
-			auto auth = client->auth().devLogin((std::string)email.utf8());
-
-			std::ostringstream o;
-			o << "{\"ok\":true,\"token\":\"" << auth.token << "\",";
-			o << "\"user\":{\"userId\":\"" << auth.userId << "\",";
-			o << "\"email\":\"" << auth.email << "\",";
-			o << "\"gamertag\":\"" << auth.gamertag << "\"}}";
-			return String(o.str().c_str());
-		}
-		catch (const std::exception& e) {
-			std::string err = std::string("{\"ok\":false,\"error\":\"") + e.what() + "\"}";
-			return String(err.c_str());
-		}
-	}
-
-	void dev_login_async(const String& email, const Callable& cb) {
-		try {
-			client->auth().devLoginAsync((std::string)email.utf8(),
-				[this, cb](graphql::GraphQLOutcome out, crowdy::domains::AuthResponse auth) mutable {
-					std::ostringstream o;
-					if (out.ok()) {
-						o << "{\"ok\":true,\"token\":\"" << auth.token << "\",";
-						o << "\"user\":{\"userId\":\"" << auth.userId << "\",";
-						o << "\"email\":\"" << auth.email << "\",";
-						o << "\"gamertag\":\"" << auth.gamertag << "\"}}";
-					}
-					else {
-						o << "{\"ok\":false}";
-					}
-					// Ensure callback runs on the main thread
-					this->call_deferred("_invoke_callable", Callable(cb), String(o.str().c_str()));
-				});
-		}
-		catch (const std::exception& e) {
-			std::string err = std::string("{\"ok\":false,\"error\":\"") + e.what() + "\"}";
-			this->call_deferred("_invoke_callable", Callable(cb), String(err.c_str()));
-		}
-	}
-
 	String login(const String& email, const String& password) {
 		try {
-			auto auth = client->auth().login((std::string)email.utf8(), (std::string)password.utf8());
+			auto auth = identityClient->auth().login((std::string)email.utf8(), (std::string)password.utf8());
 
 			std::ostringstream o;
 			o << "{\"ok\":true,\"token\":\"" << auth.token << "\",";
 			o << "\"user\":{\"userId\":\"" << auth.userId << "\",";
-			o << "\"email\":\"" << auth.email << "\",";
-			o << "\"gamertag\":\"" << auth.gamertag << "\"}}";
+			o << "\"email\":\"" << auth.email.valueOrEmpty() << "\",";
+			o << "\"gamertag\":\"" << auth.gamertag.valueOrEmpty() << "\"}}";
 			return String(o.str().c_str());
 		}
 		catch (const std::exception& e) {
@@ -356,15 +337,14 @@ public:
 
 	void login_async(const String& email, const String& password, const Callable& cb) {
 		try {
-			std::cout << "TOKEN: " << client->auth().getToken() << std::endl;
-			client->auth().loginAsync((std::string)email.utf8(), (std::string)password.utf8(),
+			identityClient->auth().loginAsync((std::string)email.utf8(), (std::string)password.utf8(),
 				[this, cb](graphql::GraphQLOutcome out, crowdy::domains::AuthResponse auth) mutable {
 					std::ostringstream o;
 					if (out.ok()) {
 						o << "{\"ok\":true,\"token\":\"" << auth.token << "\",";
 						o << "\"user\":{\"userId\":\"" << auth.userId << "\",";
-						o << "\"email\":\"" << auth.email << "\",";
-						o << "\"gamertag\":\"" << auth.gamertag << "\"}}";
+						o << "\"email\":\"" << auth.email.valueOrEmpty() << "\",";
+						o << "\"gamertag\":\"" << auth.gamertag.valueOrEmpty() << "\"}}";
 					}
 					else {
 						o << "{\"ok\":false}";
@@ -381,13 +361,13 @@ public:
 
 	String register_user(const String& email, const String& password, const String& gamertag) {
 		try {
-			auto auth = client->auth().registerUser((std::string)email.utf8(), (std::string)password.utf8(), (std::string)gamertag.utf8());
+			auto auth = identityClient->auth().registerUser((std::string)email.utf8(), (std::string)password.utf8(), (std::string)gamertag.utf8());
 
 			std::ostringstream o;
 			o << "{\"ok\":true,\"token\":\"" << auth.token << "\",";
 			o << "\"user\":{\"userId\":\"" << auth.userId << "\",";
-			o << "\"email\":\"" << auth.email << "\",";
-			o << "\"gamertag\":\"" << auth.gamertag << "\"}}";
+			o << "\"email\":\"" << auth.email.valueOrEmpty() << "\",";
+			o << "\"gamertag\":\"" << auth.gamertag.valueOrEmpty() << "\"}}";
 			return String(o.str().c_str());
 		}
 		catch (const std::exception& e) {
@@ -398,14 +378,14 @@ public:
 
 	void register_user_async(const String& email, const String& password, const String& gamertag, const Callable& cb) {
 		try {
-			client->auth().registerUserAsync((std::string)email.utf8(), (std::string)password.utf8(), (std::string)gamertag.utf8(),
+			identityClient->auth().registerUserAsync((std::string)email.utf8(), (std::string)password.utf8(), (std::string)gamertag.utf8(),
 				[this, cb](graphql::GraphQLOutcome out, crowdy::domains::AuthResponse auth) mutable {
 					std::ostringstream o;
 					if (out.ok()) {
 						o << "{\"ok\":true,\"token\":\"" << auth.token << "\",";
 						o << "\"user\":{\"userId\":\"" << auth.userId << "\",";
-						o << "\"email\":\"" << auth.email << "\",";
-						o << "\"gamertag\":\"" << auth.gamertag << "\"}}";
+						o << "\"email\":\"" << auth.email.valueOrEmpty() << "\",";
+						o << "\"gamertag\":\"" << auth.gamertag.valueOrEmpty() << "\"}}";
 					}
 					else {
 						o << "{\"ok\":false}";
@@ -421,7 +401,7 @@ public:
 
 	String logout() {
 		try {
-			bool ok = client->auth().logout();
+			bool ok = identityClient->auth().logout();
 
 			std::ostringstream o;
 			o << "{\"ok\":true,\"result\":" << (ok ? "true" : "false") << "}";
@@ -435,7 +415,7 @@ public:
 
 	void logout_async(const Callable& cb) {
 		try {
-			client->auth().logoutAsync([this, cb](graphql::GraphQLOutcome out, bool ok) mutable {
+			identityClient->auth().logoutAsync([this, cb](graphql::GraphQLOutcome out, bool ok) mutable {
 				std::ostringstream o;
 				o << "{\"ok\":true,\"result\":" << (ok ? "true" : "false") << "}";
 				this->call_deferred("_invoke_callable", Callable(cb), String(o.str().c_str()));
@@ -460,7 +440,7 @@ public:
 		// Basic passthrough (synchronous). This is small convenience helper for
 		// quick tests; prefer the higher-level helpers below for auth flows.
 		try {
-			auto res = client->managementClient().request((std::string)query.utf8());
+			auto res = identityClient->graphqlClient().request((std::string)query.utf8());
 			return String(res.dump().c_str());
 		}
 		catch (const std::exception& e) {
@@ -473,7 +453,7 @@ public:
 	// Request a magic login link (passwordless). Returns the server response JSON.
 	String request_login_link(const String& email, const String& redirect_uri) {
 		try {
-			auto resp = client->auth().requestLoginLink((std::string)email.utf8(), (std::string)redirect_uri.utf8());
+			auto resp = identityClient->auth().requestLoginLink((std::string)email.utf8(), (std::string)redirect_uri.utf8());
 			return String(resp.dump().c_str());
 		}
 		catch (const std::exception& e) {
@@ -504,7 +484,7 @@ public:
 
 	// Patch alignment: no-op insertion to align file for future edits.
 
-	// Synchronous connect: mint app token and connect (blocking assign/connect call).
+	// Synchronous connect: mint app token and connect (blocking assign/connect call). TODO FIX
 	String replication_connect(const String& app_id) {
 		try {
 			// New connection generation
@@ -512,12 +492,12 @@ public:
 
 			std::string app = (std::string)app_id.utf8();
 
-			auto token = client->portal().mintAppToken(app);
+			auto token = identityClient->portal().mintAppToken(app);
 
 			crowdy::replication::Config cfg;
 			cfg.appId = static_cast<std::int64_t>(std::stoll(token.appId));
 			cfg.token.token = token.token;
-			cfg.token.gameTokenId = token.gameTokenId;
+			cfg.token.gameTokenId = static_cast<std::int64_t>(std::stoll(token.gameTokenId));
 
 
 			crowdy::replication::Handlers handlers;
@@ -570,7 +550,7 @@ public:
 				};
 
 
-			auto conn = client->replication().connect(cfg, handlers);
+			auto conn = identityClient->replication().connect(cfg, handlers);
 
 
 			if (!alive_.load(std::memory_order_acquire) ||
@@ -602,10 +582,9 @@ public:
 	// should be registered via replication_set_event_callback and replication_set_status_callback.
 	void replication_connect_async(const String& app_id, const Callable& connect_cb) {
 		try {
-			std::cout << "TOKEN: " << client->auth().getToken() << std::endl;
 			std::string app = (std::string)app_id.utf8();
 			// First mint app token asynchronously
-			client->portal().mintAppTokenAsync(app, [this, connect_cb](crowdy::graphql::GraphQLOutcome out, crowdy::domains::AppTokenResponse token) mutable {
+			identityClient->portal().mintAppTokenAsync(app, [this, connect_cb](crowdy::graphql::GraphQLOutcome out, crowdy::domains::AppTokenResponse token) mutable {
 				if (!out.ok()) {
 					std::ostringstream o;
 					o << "{\"ok\":false,\"error\":\""
@@ -621,6 +600,9 @@ public:
 					);
 					return;
 				}
+
+				UtilityFunctions::print("minted token: ", String(token.token.c_str()));
+
 				// Run the blocking connect on a background thread
 				// Increment generation for this new connect attempt. Any
 				// background work started by prior generations will see the
@@ -631,7 +613,8 @@ public:
 						crowdy::replication::Config cfg;
 						cfg.appId = static_cast<std::int64_t>(std::stoll(token.appId));
 						cfg.token.token = token.token;
-						cfg.token.gameTokenId = token.gameTokenId;
+						UtilityFunctions::print("connection token: ", String(cfg.token.token.c_str()));
+						cfg.token.gameTokenId = static_cast<std::int64_t>(std::stoll(token.gameTokenId));
 						// Build handlers using stored callables
 						crowdy::replication::Handlers handlers;
 						handlers.actorUpdate = [this](const crowdy::replication::SpatialNotification& n) {
@@ -642,9 +625,40 @@ public:
 							std::ostringstream o; o << "{\"status\":" << static_cast<int>(s) << "}";
 							if (replication_status_cb.is_valid()) this->call_deferred("_invoke_callable", Callable(replication_status_cb), String(o.str().c_str()));
 							};
-						auto conn = client->replication().connect(cfg, handlers);
+
+						initializeGameClient(token);
+
+						auto result = gameClient->replication().connectWithStatus(cfg, handlers);
 						// Replace connection atomically
-						replConn = conn;
+						replConn = result.connection;
+						auto status = result.status;
+						UtilityFunctions::print("connectWithStatus STATUS: ", static_cast<int>(status.code));
+
+						String stateStr;
+
+						switch (replConn->state())
+						{
+						case crowdy::replication::ConnState::Idle:
+							stateStr = "Idle";
+							break;
+						case crowdy::replication::ConnState::Connecting:
+							stateStr = "Connecting";
+							break;
+						case crowdy::replication::ConnState::Connected:
+							stateStr = "Connected";
+							break;
+						case crowdy::replication::ConnState::Reconnecting:
+							stateStr = "Reconnecting";
+							break;
+						case crowdy::replication::ConnState::Failed:
+							stateStr = "Failed";
+							break;
+						case crowdy::replication::ConnState::Closed:
+							stateStr = "Closed";
+							break;
+						}
+
+						UtilityFunctions::print("CONNECTION STATUS: ", stateStr);
 						// Notify caller on main thread
 						if (alive_.load(std::memory_order_acquire) && new_gen == conn_generation_.load(std::memory_order_acquire)) {
 							this->call_deferred("_invoke_callable", Callable(connect_cb), String("{\"ok\":true}"));
@@ -701,7 +715,7 @@ public:
 		try {
 			crowdy::session::WorldSessionConfig cfg;
 			cfg.appId = (std::string)app_id.utf8();
-			worldSession = std::make_unique<crowdy::session::WorldSession>(replConn, client.get(), cfg);
+			worldSession = std::make_unique<crowdy::session::WorldSession>(replConn, identityClient.get(), cfg);
 			return String("{\"ok\":true}");
 		}
 		catch (const std::exception& e) {
@@ -749,6 +763,34 @@ public:
 	// Send an actor update. Returns {ok:true,sequence:n} or {ok:false,error:..}
 	String replication_send_actor_update(const String& uuid_hex, int x, int y, int z, const String& state_base64) {
 		if (!replConn) return String("{\"ok\":false,\"error\":\"not connected\"}");
+
+
+		String stateStr;
+
+		switch (replConn->state())
+		{
+		case crowdy::replication::ConnState::Idle:
+			stateStr = "Idle";
+			break;
+		case crowdy::replication::ConnState::Connecting:
+			stateStr = "Connecting";
+			break;
+		case crowdy::replication::ConnState::Connected:
+			stateStr = "Connected";
+			break;
+		case crowdy::replication::ConnState::Reconnecting:
+			stateStr = "Reconnecting";
+			break;
+		case crowdy::replication::ConnState::Failed:
+			stateStr = "Failed";
+			break;
+		case crowdy::replication::ConnState::Closed:
+			stateStr = "Closed";
+			break;
+		}
+
+		UtilityFunctions::print("CONNECTION STATUS: ", stateStr);
+
 		crowdy::core::ActorUuid uuid{};
 		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
 		auto v = crowdy::core::base64Decode((std::string)state_base64.utf8());
