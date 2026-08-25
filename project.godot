@@ -23,9 +23,9 @@ Config="*uid://bx26c7av7xmkc"
 
 [game]
 
-game_api_url="https://ck.test.v7.cks-env.com/graphql"
-app_id="82274011796736"
-ws_url="wss://ck.test.v7.cks-env.com"
+game_api_url="https://ck.dev.crowdedkingdoms.com/graphql"
+app_id="83702098168832 "
+ws_url="wss://ck.dev.crowdedkingdoms.com"
 
 [input]
 

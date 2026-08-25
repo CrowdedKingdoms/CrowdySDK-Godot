@@ -96,7 +96,6 @@ func replication_get_status():
 func get_players():
 	# returns array of dictionaries
 	var res = native.worldsession_get_actors()
-	print("get players: ", res)
 	var js = JSON.new()
 	if js.parse(res) == OK:
 		return js.get_data()
@@ -181,7 +180,6 @@ func _on_native_status(raw):
 	emit_signal("replication_status_changed", data)
 
 func _emit_players_snapshot():
-	print("_emit_players_snapshot")
 	var arr = get_players()
 	_players.clear()
 	for p in arr:

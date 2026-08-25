@@ -271,10 +271,6 @@ public:
 	void initializeGameClient(const crowdy::domains::AppTokenResponse& token) {
 		crowdy::ClientConfig cfg;
 
-		UtilityFunctions::print("minted token: ", String(token.token.c_str()));
-		UtilityFunctions::print("minted token httpUrl: ", String(token.gameApiUrl.get()->c_str()));
-		UtilityFunctions::print("minted token discovery: ", String(token.discoveryUrl.get()->c_str()));
-
 		cfg.httpUrl = (std::string)token.gameApiUrl;
 		cfg.discoveryUrl = (std::string)token.discoveryUrl;
 		cfg.transport = crowdy::graphql::makeCurlTransport();
@@ -601,8 +597,6 @@ public:
 					return;
 				}
 
-				UtilityFunctions::print("minted token: ", String(token.token.c_str()));
-
 				// Run the blocking connect on a background thread
 				// Increment generation for this new connect attempt. Any
 				// background work started by prior generations will see the
@@ -613,7 +607,7 @@ public:
 						crowdy::replication::Config cfg;
 						cfg.appId = static_cast<std::int64_t>(std::stoll(token.appId));
 						cfg.token.token = token.token;
-						UtilityFunctions::print("connection token: ", String(cfg.token.token.c_str()));
+						// UtilityFunctions::print("connection token: ", String(cfg.token.token.c_str()));
 						cfg.token.gameTokenId = static_cast<std::int64_t>(std::stoll(token.gameTokenId));
 						// Build handlers using stored callables
 						crowdy::replication::Handlers handlers;
@@ -632,7 +626,7 @@ public:
 						// Replace connection atomically
 						replConn = result.connection;
 						auto status = result.status;
-						UtilityFunctions::print("connectWithStatus STATUS: ", static_cast<int>(status.code));
+						//UtilityFunctions::print("connectWithStatus STATUS: ", static_cast<int>(status.code));
 
 						String stateStr;
 
@@ -658,7 +652,6 @@ public:
 							break;
 						}
 
-						UtilityFunctions::print("CONNECTION STATUS: ", stateStr);
 						// Notify caller on main thread
 						if (alive_.load(std::memory_order_acquire) && new_gen == conn_generation_.load(std::memory_order_acquire)) {
 							this->call_deferred("_invoke_callable", Callable(connect_cb), String("{\"ok\":true}"));
@@ -788,8 +781,6 @@ public:
 			stateStr = "Closed";
 			break;
 		}
-
-		UtilityFunctions::print("CONNECTION STATUS: ", stateStr);
 
 		crowdy::core::ActorUuid uuid{};
 		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");

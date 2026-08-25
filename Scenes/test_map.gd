@@ -28,18 +28,7 @@ func _process(delta):
 			replica_update_timer = 0.0
 			_send_local_state()
 
-#func spawn_local_player():
-	#print("spawn_local_player")
-	#local_player = player_scene.instantiate()
-	#add_child(local_player)
-	## Obtain UUID from world session if present
-	#var uuid = ReplicationService.get_players() # placeholder to ensure ws exists
-	## TODO: fetch native worldsession self uuid
-
 func _send_local_state():
-	print("UUID:", ReplicationService.get_self_uuid())
-	print("Players:", ReplicationService.get_players())
-	
 	var self_uuid = ReplicationService.get_self_uuid()
 	if self_uuid == "":
 		print("No local UUID yet")
@@ -56,7 +45,6 @@ func _send_local_state():
 	var bytes = raw.to_utf8_buffer()
 	var b64 = Marshalls.raw_to_base64(bytes)
 	var resp = ReplicationService.send_actor_update(self_uuid, int(pos.x), int(pos.y), int(pos.z), b64)
-	print("Repl resp: ", resp)
 
 # Remote player handlers
 func _on_player_joined(data):
@@ -64,6 +52,7 @@ func _on_player_joined(data):
 	var uuid = data.uuid
 	if remote_players.has(uuid): return
 	var p = player_scene.instantiate()
+	p.set_script(load("res://Player/remote_player.gd"))
 	add_child(p)
 	remote_players[uuid] = p
 	# apply initial state
@@ -77,6 +66,7 @@ func _on_player_left(data):
 	remote_players.erase(uuid)
 
 func _on_player_updated(data):
+	print("_on_player_updated")
 	var uuid = data.uuid
 	if not remote_players.has(uuid): return
 	var p = remote_players[uuid]
@@ -86,5 +76,7 @@ func _on_player_updated(data):
 			var js = JSON.new()
 			if js.parse(data.state) == OK:
 				var d = js.get_data()
-				if d.has("pos"):
-					p.global_transform.origin = Vector3(d.pos[0], d.pos[1], d.pos[2])
+				if d.has("pos") and d.has("rot"):
+					var new_pos = Vector3(d.pos[0], d.pos[1], d.pos[2])
+					var new_rot = Vector3(d.rot[0], d.rot[1], d.rot[2])
+					p.apply_replication_state(new_pos, new_rot)
