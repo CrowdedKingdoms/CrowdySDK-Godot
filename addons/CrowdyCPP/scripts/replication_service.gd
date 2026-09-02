@@ -30,31 +30,23 @@ func _ready():
 	# Start replication after auth success. AuthService emits login_completed.
 	if not AuthService.login_completed.is_connected(_on_login_completed):
 		AuthService.login_completed.connect(_on_login_completed)
-	
-	print("ready")
+
 	# Register high-level actor lifecycle handlers if WorldSession exposes them
 	# (the native wrapper will forward actorAdded/actorRemoved/actorUpdated via
 	# the same event callback with a "lifecycle" field). We handle them in
 	# _on_native_event and emit player_joined/player_left/player_updated.
 
 func _on_login_completed(res):
-	print("replication _on_login_completed")
 	if typeof(res) == TYPE_DICTIONARY and res.has("ok") and res.ok:
 		ReplicationService.start_replication_async(Config.app_id)
 
 func _process(delta: float) -> void:
-	native.poll()
-	
-	if Engine.get_process_frames() % 120 == 0:
-		#print(replication_get_status())
-		pass
+	native.poll() # TODO set some polling freq
 
 # High-level helpers -------------------------------------------------------
 func start_replication_async(app_id: String):
-	print("start_replication_async")
 	# connect async; connect callback receives JSON string
 	var cb = func(raw):
-		print("CONNECT RESULT:", raw)
 		var js = JSON.new()
 		var err = js.parse(raw)
 		if err != OK:
@@ -65,7 +57,7 @@ func start_replication_async(app_id: String):
 		if typeof(data) == TYPE_DICTIONARY and data.has("ok") and data.ok:
 			# create a world session for higher-level actor stores
 			var res = native.replication_create_world_session(app_id)
-			print("replication_create_world_session result:", res)
+			# print("replication_create_world_session result:", res)
 			emit_signal("replication_connected")
 			# emit current player list once
 			_emit_players_snapshot()
@@ -104,7 +96,6 @@ func get_players():
 # Sending helpers ---------------------------------------------------------
 func send_actor_update(uuid_hex: String, x: int, y: int, z: int, state_base64: String) -> Dictionary:
 	var res = native.replication_send_actor_update(uuid_hex, x, y, z, state_base64)
-	print("send_actor_update: ", res)
 	var js = JSON.new()
 	if js.parse(res) == OK:
 		return js.get_data()
@@ -144,7 +135,6 @@ func send_single_actor_message(x: int, y: int, z: int, target_uuid_hex: String, 
 
 # Internal helpers --------------------------------------------------------
 func _on_native_event(raw):
-	print("_on_native_event")
 	var js = JSON.new()
 	if js.parse(raw) != OK:
 		return

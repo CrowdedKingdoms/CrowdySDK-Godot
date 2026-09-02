@@ -31,7 +31,6 @@ func _process(delta):
 func _send_local_state():
 	var self_uuid = ReplicationService.get_self_uuid()
 	if self_uuid == "":
-		print("No local UUID yet")
 		return
 	
 	if not local_player:
@@ -44,7 +43,7 @@ func _send_local_state():
 	var raw = JSON.stringify(s)
 	var bytes = raw.to_utf8_buffer()
 	var b64 = Marshalls.raw_to_base64(bytes)
-	var resp = ReplicationService.send_actor_update(self_uuid, int(pos.x), int(pos.y), int(pos.z), b64)
+	var resp = ReplicationService.send_actor_update(self_uuid, 0, 0, 0, b64)
 
 # Remote player handlers
 func _on_player_joined(data):
@@ -66,17 +65,25 @@ func _on_player_left(data):
 	remote_players.erase(uuid)
 
 func _on_player_updated(data):
-	print("_on_player_updated")
 	var uuid = data.uuid
 	if not remote_players.has(uuid): return
 	var p = remote_players[uuid]
 	if data.has("state") and data.state != "":
-		# simple parsing: expect JSON string in state
-		if typeof(data.state) == TYPE_STRING:
-			var js = JSON.new()
-			if js.parse(data.state) == OK:
-				var d = js.get_data()
-				if d.has("pos") and d.has("rot"):
-					var new_pos = Vector3(d.pos[0], d.pos[1], d.pos[2])
-					var new_rot = Vector3(d.rot[0], d.rot[1], d.rot[2])
-					p.apply_replication_state(new_pos, new_rot)
+		var bytes = Marshalls.base64_to_raw(data.state)
+		var json_string = bytes.get_string_from_utf8()
+		var decoded = JSON.parse_string(json_string)
+
+		var pos = Vector3(
+			decoded["pos"][0],
+			decoded["pos"][1],
+			decoded["pos"][2]
+		)
+
+		var rot = Vector3(
+			decoded["rot"][0],
+			decoded["rot"][1],
+			decoded["rot"][2]
+		)
+		
+		p.apply_replication_state(pos, rot)
+		
