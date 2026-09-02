@@ -1,0 +1,197 @@
+fragment PlayerCodeListingAdminFields on PlayerCodeListing {
+  listingId
+  appId
+  ownerKind
+  ownerRef
+  name
+  description
+  mediaJson
+  licenseMode
+  acquisitionMode
+  status
+  createdAt
+  updatedAt
+}
+
+fragment PlayerCodeAcquisitionAdminFields on PlayerCodeAcquisition {
+  acquisitionId
+  listingId
+  appId
+  acquirerUserId
+  mode
+  status
+  acquiredAt
+  revokedAt
+}
+
+query MarketplaceAdmissionQueue($appId: BigInt!) {
+  appCodeAdmissionQueue(appId: $appId) {
+    listing {
+      ...PlayerCodeListingAdminFields
+    }
+    admissionState
+    admissionId
+    matchedSubjectKind
+  }
+}
+
+query MarketplaceAppListings($appId: BigInt!, $includeDelisted: Boolean) {
+  appPlayerCodeListings(appId: $appId, includeDelisted: $includeDelisted) {
+    ...PlayerCodeListingAdminFields
+  }
+}
+
+query MarketplaceAppListingVersions($appId: BigInt!, $listingId: String!) {
+  appPlayerCodeListingVersions(appId: $appId, listingId: $listingId) {
+    versionId
+    listingId
+    versionNo
+    serverArtifactHashes
+    clientArtifactHashes
+    requirements {
+      serverArtifactHash
+      clientArtifactHash
+    }
+    capabilitySummaryJson
+    capabilityHash
+    openSource
+    licenseText
+    createdAt
+  }
+}
+
+query MarketplaceAppAcquisitions($appId: BigInt!) {
+  appPlayerCodeAcquisitions(appId: $appId) {
+    ...PlayerCodeAcquisitionAdminFields
+  }
+}
+
+mutation MarketplaceTransferListing($input: TransferPlayerCodeListingInput!) {
+  transferPlayerCodeListing(input: $input) {
+    ...PlayerCodeListingAdminFields
+  }
+}
+
+mutation MarketplaceSetListingStatus(
+  $appId: BigInt!
+  $listingId: String!
+  $status: PlayerCodeListingStatus!
+) {
+  setPlayerCodeListingStatus(
+    appId: $appId
+    listingId: $listingId
+    status: $status
+  ) {
+    ...PlayerCodeListingAdminFields
+  }
+}
+
+mutation MarketplaceSetGridClaimPolicy(
+  $appId: BigInt!
+  $policy: GridClaimPolicy!
+  $approverUserIds: [BigInt!]
+) {
+  setAppGridClaimPolicy(
+    appId: $appId
+    policy: $policy
+    approverUserIds: $approverUserIds
+  )
+}
+
+mutation MarketplaceSetListingPricing($input: SetListingPricingInput!) {
+  setListingPricing(input: $input)
+}
+
+mutation MarketplaceSetOrgShare($appId: BigInt!, $bps: Int!) {
+  setAppMarketplaceOrgShare(appId: $appId, bps: $bps)
+}
+
+mutation MarketplaceBeginSellerOnboarding($country: String!) {
+  beginSellerOnboarding(country: $country) {
+    status
+    onboardingUrl
+    unavailableReason
+  }
+}
+
+mutation MarketplaceCreateAccountSession($country: String!) {
+  createSellerAccountSession(country: $country) {
+    clientSecret
+    publishableKey
+    accountRef
+    onboardingComplete
+    expiresAt
+  }
+}
+
+mutation MarketplaceCreateOrgAccountSession($orgId: BigInt!, $country: String!) {
+  createOrgSellerAccountSession(orgId: $orgId, country: $country) {
+    clientSecret
+    publishableKey
+    accountRef
+    onboardingComplete
+    expiresAt
+  }
+}
+
+mutation MarketplaceBeginOrgSellerOnboarding($orgId: BigInt!, $country: String!) {
+  beginOrgSellerOnboarding(orgId: $orgId, country: $country) {
+    status
+    onboardingUrl
+    unavailableReason
+  }
+}
+
+query MarketplaceMySellerBalance {
+  mySellerPayoutBalance {
+    partyKind
+    partyRef
+    pendingCents
+    payableCents
+    reservedCents
+    onboardingStatus
+    payoutsFrozen
+  }
+}
+
+mutation MarketplaceRequestPayout {
+  requestSellerPayout
+}
+
+mutation MarketplaceSpendPayoutToWallet($amountCents: Int!) {
+  spendPayoutBalanceToWallet(amountCents: $amountCents)
+}
+
+query MarketplaceCommerceRiskQueue($appId: BigInt!) {
+  commerceRiskQueue(appId: $appId) {
+    flagId
+    appId
+    kind
+    orderId
+    subjectKind
+    subjectRef
+    detail
+    status
+    createdAt
+  }
+}
+
+mutation MarketplaceDecideRiskFlag(
+  $appId: BigInt!
+  $flagId: String!
+  $release: Boolean!
+) {
+  decideCommerceRiskFlag(appId: $appId, flagId: $flagId, release: $release)
+}
+
+mutation MarketplaceCreateGridListing($input: CreateGridListingInput!) {
+  createGridListing(input: $input) {
+    gridListingId
+    appId
+    kind
+    name
+    priceCents
+    resalePolicy
+    status
+  }
+}

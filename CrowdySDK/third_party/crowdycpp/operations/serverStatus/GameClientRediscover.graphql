@@ -1,0 +1,12 @@
+# Deliberately the narrowest possible bootstrap: re-discovery runs when the
+# endpoint a client is pinned to has stopped answering, so it asks the shared
+# origin for nothing but where to go next. GameClientBootstrap also selects
+# `me`, version info and proxy status, any of which can fail for reasons that
+# have nothing to do with the question being asked here.
+query GameClientRediscover($appId: BigInt!) {
+  gameClientBootstrap(appId: $appId) {
+    gameApiUrl
+    gameApiWsUrl
+    discoveryUrl
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "contractVersion": "crowdy.studio-runtime-sync-projection/1",
+  "crowdyJs": {
+    "version": "15.0.0",
+    "commit": "2b0a5a5aa269c3822a5db8fdde689519bee5fe86"
+  },
+  "cases": [
+    {
+      "name": "never-run-project-revision-fallback",
+      "projectRevisionId": "17",
+      "runtime": {
+        "phase": "IDLE"
+      },
+      "runtimeSync": {
+        "state": "NEVER_RUN"
+      },
+      "expectedAgentRuntime": {
+        "phase": "IDLE",
+        "savedRevision": "17",
+        "sync": "NEVER_RUN"
+      }
+    },
+    {
+      "name": "running-live-preserves-native-bindings",
+      "projectRevisionId": "18",
+      "runtime": {
+        "phase": "RUNNING",
+        "target": "SERVER",
+        "message": "Project is live"
+      },
+      "runtimeSync": {
+        "state": "RUNNING_SAVED",
+        "savedRevisionId": "18",
+        "runningRevisionId": "18",
+        "deployment": "LIVE",
+        "startedAt": "2026-07-25T00:00:00.000Z",
+        "runningProjectContentHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "runningServerModuleName": "weather-server",
+        "runningClientModuleName": "weather-client",
+        "runningPairingPreference": "REQUIRED",
+        "startedAtEpochMs": 1784937600000
+      },
+      "expectedAgentRuntime": {
+        "phase": "RUNNING",
+        "savedRevision": "18",
+        "runningRevision": "18",
+        "sync": "RUNNING_SAVED",
+        "target": "SERVER",
+        "draft": false,
+        "message": "Project is live"
+      }
+    },
+    {
+      "name": "running-stale-draft",
+      "projectRevisionId": "19",
+      "runtime": {
+        "phase": "RUNNING",
+        "target": "CLIENT"
+      },
+      "runtimeSync": {
+        "state": "RUNNING_STALE",
+        "savedRevisionId": "19",
+        "runningRevisionId": "18",
+        "deployment": "DRAFT",
+        "startedAt": "2026-07-25T00:00:01.000Z",
+        "runningProjectContentHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "runningServerModuleName": "weather-server",
+        "runningClientModuleName": "weather-client",
+        "runningPairingPreference": "OPTIONAL",
+        "startedAtEpochMs": 1784937601000
+      },
+      "expectedAgentRuntime": {
+        "phase": "RUNNING",
+        "savedRevision": "19",
+        "runningRevision": "18",
+        "sync": "RUNNING_STALE",
+        "target": "CLIENT",
+        "draft": true
+      }
+    },
+    {
+      "name": "stopped-retains-last-runtime-identity",
+      "projectRevisionId": "19",
+      "runtime": {
+        "phase": "STOPPED",
+        "message": "Project stopped"
+      },
+      "runtimeSync": {
+        "state": "STOPPED",
+        "savedRevisionId": "19",
+        "runningRevisionId": "18",
+        "deployment": "DRAFT",
+        "startedAt": "2026-07-25T00:00:01.000Z",
+        "runningProjectContentHash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "runningServerModuleName": "weather-server",
+        "runningPairingPreference": "NONE",
+        "startedAtEpochMs": 1784937601000
+      },
+      "expectedAgentRuntime": {
+        "phase": "STOPPED",
+        "savedRevision": "19",
+        "runningRevision": "18",
+        "sync": "STOPPED",
+        "draft": true,
+        "message": "Project stopped"
+      }
+    }
+  ]
+}

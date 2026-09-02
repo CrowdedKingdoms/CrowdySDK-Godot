@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.22)
+project(CrowdyProdSmoke LANGUAGES CXX)
+find_package(CrowdyCPP 0.20 CONFIG REQUIRED)
+add_executable(prod_smoke main.cpp)
+target_link_libraries(prod_smoke PRIVATE CrowdyCPP::crowdy)
+target_compile_features(prod_smoke PRIVATE cxx_std_20)

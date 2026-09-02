@@ -1,0 +1,24 @@
+query App($appId: BigInt!) {
+  app(appId: $appId) {
+    appId
+    orgId
+    name
+    slug
+    description
+    visibility
+    status
+    metadata
+    splitMode
+    deploymentTarget
+    runtimeStatus
+    runtimeDenialReason
+    gameApiUrl
+    createdAt
+    updatedAt
+    org {
+      orgId
+      slug
+      name
+    }
+  }
+}

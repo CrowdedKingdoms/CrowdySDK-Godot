@@ -1,0 +1,129 @@
+name: Release
+
+run-name: release ${{ github.ref_name }}
+
+# CrowdyCPP is consumed as SOURCE: a consumer clones a ref, builds it, and
+# `cmake --install`s it. There is no registry to publish to, which for a long
+# time was read as "so there is nothing to release" — and the cost of that
+# reading was paid on 2026-08-19, when a developer reported a defect that had
+# been fixed five days earlier. They were on `main`; the fix was on the tier
+# branches; 0.20.0, 0.21.0, 0.23.0 and 0.24.0 had all been built and none had
+# ever been tagged on the remote, so the newest thing a consumer could find was
+# v0.19.0. Nothing was broken. Nothing was findable either.
+#
+# So what this releases is the one artifact that matters here: a TAG a consumer
+# can pin, with notes saying what changed, proven to build and install.
+#
+# Tags are `dev/vX.Y.Z`, `test/vX.Y.Z`, `prod/vX.Y.Z` — the tier is the PREFIX.
+# scripts/ci/resolve-release-tier.sh explains why a suffix would be wrong and
+# refuses a tag whose commit is not contained in the branch it names;
+# scripts/ci/assert-tag-version.sh refuses a tag whose number is not the number
+# the tree builds. Both have self-tests that watch them refuse, run by CI.
+on:
+  push:
+    tags:
+      - 'dev/v*.*.*'
+      - 'test/v*.*.*'
+      - 'prod/v*.*.*'
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # THE GATE. Nothing is built or published until both halves pass.
+  guard:
+    runs-on: ubuntu-latest
+    # Every job here carries a timeout, and the reason is not hypothetical: on the day
+    # this workflow shipped, `apt-get install` in consumer-install stalled for over
+    # twenty minutes on a run whose predecessor took 3m39s end to end. Without a job
+    # timeout that stall runs to the six-hour default, and a release that hangs for six
+    # hours is indistinguishable from one nobody cut. Fail fast and re-run instead.
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      tier: ${{ steps.tier.outputs.tier }}
+      version: ${{ steps.tier.outputs.version }}
+    steps:
+      # fetch-depth: 0 is required, not tidiness: the containment check is a
+      # merge-base against the tier branch and a shallow clone has no merge-base,
+      # so the gate would refuse every valid tag.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Resolve tier and refuse a tag outside its branch
+        id: tier
+        run: scripts/ci/resolve-release-tier.sh
+      - name: Refuse a tag that is not the version the tree builds
+        run: scripts/ci/assert-tag-version.sh "${{ steps.tier.outputs.version }}"
+
+  # A consumer's own path, run against the exact tagged tree. CI has already
+  # built this commit on the tier branch across three operating systems; what it
+  # has never done from the tag is install the package and link something against
+  # it the way a consumer will, which is the claim a release makes.
+  consumer-install:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev
+      - name: Configure
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          -DCROWDY_BUILD_E2E=OFF
+          -DCROWDY_BUILD_BENCHMARKS=OFF
+          -DCROWDY_BUILD_EXAMPLES=OFF
+      - name: Build
+        run: cmake --build build -j 4
+      - name: Unit tests
+        timeout-minutes: 10
+        run: ctest --test-dir build --timeout 120 --output-on-failure
+      - name: Install and link an external consumer
+        run: |
+          cmake --install build --prefix "$RUNNER_TEMP/crowdy-install"
+          cmake -S tests/consumer -B build-consumer \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/crowdy-install"
+          cmake --build build-consumer -j 4
+          ./build-consumer/crowdycpp_consumer
+
+  publish:
+    needs: [guard, consumer-install]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # creating a release writes to the repository
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create or update the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          TIER: ${{ needs.guard.outputs.tier }}
+          VERSION: ${{ needs.guard.outputs.version }}
+        # Idempotent on purpose: a re-run of a tag that already has a release
+        # must not fail the workflow, or the re-run path becomes unusable exactly
+        # when it is needed. `prod` is the only tier published as a full release;
+        # dev and test are marked prerelease so a consumer reading the releases
+        # page can tell what is promoted from what is in flight.
+        run: |
+          notes=$(awk -v v="## ${VERSION#v} " '
+            $0 ~ "^" v {found=1; print; next}
+            found && /^## /{exit}
+            found {print}
+          ' MIGRATION.md)
+          if [ -z "$notes" ]; then
+            notes="See MIGRATION.md for ${VERSION#v}."
+          fi
+          prerelease=--prerelease
+          if [ "$TIER" = prod ]; then prerelease=--latest; fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TIER $VERSION" --notes "$notes" $prerelease
+          else
+            gh release create "$TAG" --title "$TIER $VERSION" --notes "$notes" $prerelease
+          fi

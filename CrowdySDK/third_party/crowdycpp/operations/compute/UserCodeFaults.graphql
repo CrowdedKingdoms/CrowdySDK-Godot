@@ -1,0 +1,56 @@
+fragment UserCodeFaultRecordFields on UserCodeFaultRecord {
+  faultId
+  appId
+  engine
+  kind
+  blame
+  retryable
+  subject
+  entryPoint
+  flowId
+  gridId
+  actingUserId
+  durationUs
+  budgetUs
+  unitsUsed
+  unitsLimit
+  stepsCompleted
+  detail
+  instanceId
+  occurredAt
+}
+
+query UserCodeFaults(
+  $appId: BigInt!
+  $engine: UserCodeFaultEngine
+  $kind: UserCodeFaultKind
+  $blame: UserCodeFaultBlame
+  $subject: String
+  $windowMinutes: Int
+  $limit: Int
+  $offset: Int
+) {
+  userCodeFaults(
+    appId: $appId
+    engine: $engine
+    kind: $kind
+    blame: $blame
+    subject: $subject
+    windowMinutes: $windowMinutes
+    limit: $limit
+    offset: $offset
+  ) {
+    ...UserCodeFaultRecordFields
+  }
+}
+
+query UserCodeFaultSummary($appId: BigInt!, $windowMinutes: Int) {
+  userCodeFaultSummary(appId: $appId, windowMinutes: $windowMinutes) {
+    engine
+    kind
+    blame
+    subject
+    faults
+    lastAt
+  }
+}

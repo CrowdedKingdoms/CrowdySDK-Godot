@@ -1,0 +1,71 @@
+query CpComputePlatformCeilings {
+  cpComputePlatformCeilings {
+    maxModules
+    maxTickHz
+    fuelPerTick
+    fuelPerInvoke
+    maxMemoryMb
+    maxRunMs
+    maxDbOpsPerTick
+    maxEgressMsgsPerMin
+    maxEgressBytesPerMin
+    maxStateWritesPerMin
+    maxStateBytesPerMin
+    updatedAt
+    updatedByUserId
+  }
+}
+
+mutation CpSetComputePlatformCeilings($input: CpSetComputePlatformCeilingsInput!) {
+  cpSetComputePlatformCeilings(input: $input) {
+    maxModules
+    maxTickHz
+    fuelPerTick
+    fuelPerInvoke
+    maxMemoryMb
+    maxRunMs
+    maxDbOpsPerTick
+    maxEgressMsgsPerMin
+    maxEgressBytesPerMin
+    maxStateWritesPerMin
+    maxStateBytesPerMin
+    updatedAt
+    updatedByUserId
+  }
+}
+
+# The SANCTIONED way to put funds in an org wallet.
+#
+# A hand-written INSERT INTO org_wallets is silently wrong rather than an error:
+# nothing assigns the wallet_id surrogate and the unique index tolerates repeated
+# NULLs, so the row inserts and every later lookup by wallet_id misses. This
+# mutation also re-evaluates the runtime out-of-funds decision, which is a stored
+# verdict rather than a live read of the balance — funding without re-evaluating
+# leaves a funded app still refusing every client.
+#
+# referenceId makes it idempotent: replaying one returns the original transaction
+# instead of crediting twice.
+mutation CpCreditOrgWallet(
+  $orgId: BigInt!
+  $amountCents: BigInt!
+  $reason: String!
+  $referenceId: String
+) {
+  creditOrgWallet(
+    orgId: $orgId
+    amountCents: $amountCents
+    reason: $reason
+    referenceId: $referenceId
+  ) {
+    transactionId
+    walletId
+    orgId
+    amountCents
+    balanceAfter
+    transactionType
+    description
+    referenceId
+    appId
+    createdAt
+  }
+}

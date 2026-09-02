@@ -1,0 +1,189 @@
+fragment CrowdyStudioAgentPolicyFields on CrowdyStudioAgentPolicy {
+  kind
+  appId
+  enabled
+  killSwitch
+  operatorKillSwitch
+  disableReasonCode
+  disableReason
+  allowedModelIds
+  allowedToolNames
+  allowedModes
+  allowedRiskClasses
+  turnLimits {
+    providerRequests
+    inputTokens
+    outputTokens
+    reasoningTokens
+    totalTokens
+    providerCostMicrousd
+    toolCalls
+    toolRounds
+    compiles
+    wallClockMs
+    concurrentProviderRequests
+  }
+  sessionLimits {
+    providerRequests
+    inputTokens
+    outputTokens
+    reasoningTokens
+    totalTokens
+    providerCostMicrousd
+    toolCalls
+    compiles
+    concurrentRuns
+  }
+  playerDayLimits {
+    providerRequests
+    inputTokens
+    outputTokens
+    reasoningTokens
+    totalTokens
+    providerCostMicrousd
+    toolCalls
+    compiles
+    concurrentSessions
+    concurrentRunsPerApp
+  }
+  retention {
+    assistantChunkHours
+    detailedContextHours
+    sessionDataDays
+    usageDays
+  }
+  privacy {
+    requireZdr
+    denyDataCollection
+    allowPrivateSource
+    requirePrivateSourceConsent
+    persistProviderBodies
+  }
+  funding {
+    billingMode
+    payerKind
+    rateCardId
+    walletDebitEnabled
+  }
+  capabilityGaps {
+    mode
+    code
+    detail
+  }
+  revision
+  platformRevision
+  appRevision
+  effectiveRevision
+  createdAt
+  updatedAt
+}
+
+fragment CrowdyStudioAgentUsageFields on CrowdyStudioAgentUsagePage {
+  records {
+    usageId
+    appId
+    userId
+    sessionId
+    runId
+    provider
+    providerGenerationId
+    resolvedModelId
+    accountingStatus
+    requestCount
+    promptTokens
+    completionTokens
+    reasoningTokens
+    cachedTokens
+    nativePromptTokens
+    nativeCompletionTokens
+    nativeReasoningTokens
+    nativeCachedTokens
+    toolCalls
+    toolRounds
+    compileCount
+    wallClockMs
+    reservedCostMicrousd
+    providerCostUsd
+    upstreamInferenceCostUsd
+    zdrEnforced
+    dataCollectionDenied
+    platformPolicyRevision
+    appPolicyRevision
+    billingMode
+    payerKind
+    occurredAt
+    ingestedAt
+  }
+  summary {
+    requestCount
+    promptTokens
+    completionTokens
+    reasoningTokens
+    cachedTokens
+    toolCalls
+    toolRounds
+    compileCount
+    wallClockMs
+    providerCostUsd
+  }
+  since
+  until
+}
+
+query CrowdyStudioAgentPolicy($appId: BigInt!) {
+  crowdyStudioAgentPolicy(appId: $appId) {
+    ...CrowdyStudioAgentPolicyFields
+  }
+}
+
+query CrowdyStudioAgentEffectivePolicy($appId: BigInt!) {
+  crowdyStudioAgentEffectivePolicy(appId: $appId) {
+    ...CrowdyStudioAgentPolicyFields
+  }
+}
+
+query CrowdyStudioAgentUsage(
+  $appId: BigInt!
+  $since: DateTime
+  $until: DateTime
+  $limit: Int
+) {
+  crowdyStudioAgentUsage(
+    appId: $appId
+    since: $since
+    until: $until
+    limit: $limit
+  ) {
+    ...CrowdyStudioAgentUsageFields
+  }
+}
+
+mutation CrowdyStudioAgentSetPolicy(
+  $input: SetCrowdyStudioAgentAppPolicyInput!
+) {
+  setCrowdyStudioAgentPolicy(input: $input) {
+    ...CrowdyStudioAgentPolicyFields
+  }
+}
+
+query CpCrowdyStudioAgentPlatformPolicy {
+  cpCrowdyStudioAgentPlatformPolicy {
+    ...CrowdyStudioAgentPolicyFields
+  }
+}
+
+mutation CpSetCrowdyStudioAgentPlatformPolicy(
+  $input: SetCrowdyStudioAgentPlatformPolicyInput!
+) {
+  cpSetCrowdyStudioAgentPlatformPolicy(input: $input) {
+    ...CrowdyStudioAgentPolicyFields
+  }
+}
+
+mutation CpSetCrowdyStudioAgentAppKill(
+  $input: SetCrowdyStudioAgentOperatorAppKillInput!
+) {
+  cpSetCrowdyStudioAgentAppKill(input: $input) {
+    ...CrowdyStudioAgentPolicyFields
+  }
+}

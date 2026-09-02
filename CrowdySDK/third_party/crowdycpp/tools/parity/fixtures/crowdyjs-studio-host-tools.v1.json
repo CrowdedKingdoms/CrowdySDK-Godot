@@ -1,0 +1,374 @@
+{
+  "fixtureVersion": 1,
+  "contractVersion": "crowdy.studio-host-tools/1",
+  "crowdyJs": {
+    "version": "15.0.0",
+    "commit": "2b0a5a5aa269c3822a5db8fdde689519bee5fe86"
+  },
+  "toolNames": [
+    "studio.context.get",
+    "studio.state.get",
+    "project.select",
+    "workspace.tab.open",
+    "workspace.tab.close",
+    "diagnostics.local.get",
+    "runtime.status.get",
+    "runtime.test_draft",
+    "runtime.deploy_live",
+    "runtime.invoke",
+    "runtime.stop"
+  ],
+  "cases": [
+    {
+      "name": "studio-context",
+      "tool": "studio.context.get",
+      "input": {},
+      "setup": [],
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "appRef": "42",
+          "projectRef": "project-1",
+          "gridRef": "500",
+          "contextVersion": "context-1",
+          "saveState": "SAVED",
+          "runtime": {
+            "phase": "IDLE",
+            "savedRevision": "1",
+            "sync": "NEVER_RUN"
+          },
+          "clientEpoch": "1",
+          "leaseKinds": [
+            "WORKSPACE",
+            "PLAY"
+          ],
+          "hostCapabilityRevision": "capability-1"
+        }
+      }
+    },
+    {
+      "name": "studio-state",
+      "tool": "studio.state.get",
+      "input": {},
+      "setup": [],
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "project": {
+            "projectId": "project-1",
+            "name": "Fixture Studio",
+            "description": "Cross-SDK projection fixture",
+            "kind": "SERVER",
+            "revision": "1",
+            "files": [
+              {
+                "target": "SERVER",
+                "path": "Cargo.toml",
+                "contentHash": "sha256:2565c4efa751f1b2c642d1b92c4b7b6d42590f7b116008c11d625d49074b5e4f",
+                "byteLength": 27
+              },
+              {
+                "target": "SERVER",
+                "path": "src/lib.rs",
+                "contentHash": "sha256:97e5f799f0a59ff09efc42eea7136a28fa9b522bf892a65cdde4c85c27a4d943",
+                "byteLength": 18
+              }
+            ],
+            "serverModuleName": "fixture-server",
+            "pairingPreference": "NONE",
+            "updatedAt": "2026-07-24T00:00:00.000Z"
+          },
+          "openFiles": [
+            {
+              "source": "PROJECT",
+              "target": "SERVER",
+              "path": "src/lib.rs"
+            }
+          ],
+          "saveState": "SAVED",
+          "runtime": {
+            "phase": "IDLE",
+            "savedRevision": "1",
+            "sync": "NEVER_RUN"
+          }
+        }
+      }
+    },
+    {
+      "name": "project-select",
+      "tool": "project.select",
+      "input": {
+        "projectRef": "project-2"
+      },
+      "setup": [],
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "selectedProjectRef": "project-2",
+          "revision": "2"
+        }
+      }
+    },
+    {
+      "name": "workspace-tab-open",
+      "tool": "workspace.tab.open",
+      "input": {
+        "source": "PROJECT",
+        "target": "SERVER",
+        "path": "Cargo.toml"
+      },
+      "setup": [],
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "name": "workspace-tab-close",
+      "tool": "workspace.tab.close",
+      "input": {
+        "source": "PROJECT",
+        "target": "SERVER",
+        "path": "Cargo.toml"
+      },
+      "setup": [
+        {
+          "tool": "workspace.tab.open",
+          "input": {
+            "source": "PROJECT",
+            "target": "SERVER",
+            "path": "Cargo.toml"
+          }
+        }
+      ],
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "name": "diagnostics-local",
+      "tool": "diagnostics.local.get",
+      "input": {},
+      "setup": [],
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "diagnostics": [
+            {
+              "source": "LOCAL_ADVISORY",
+              "target": "SERVER",
+              "path": "src/lib.rs",
+              "line": 3,
+              "column": 5,
+              "severity": "WARNING",
+              "code": "unused",
+              "message": "unused value"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "runtime-status",
+      "tool": "runtime.status.get",
+      "input": {},
+      "setup": [],
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "phase": "IDLE",
+          "savedRevision": "1",
+          "sync": "NEVER_RUN"
+        }
+      }
+    },
+    {
+      "name": "runtime-test-draft",
+      "tool": "runtime.test_draft",
+      "input": {
+        "expectedRevision": "1",
+        "targets": [
+          "SERVER"
+        ]
+      },
+      "setup": [],
+      "leaseId": "workspace-lease",
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "runtime": {
+            "phase": "RUNNING",
+            "savedRevision": "1",
+            "runningRevision": "1",
+            "sync": "RUNNING_SAVED",
+            "draft": true,
+            "message": "Draft test is running"
+          },
+          "compiledTargets": [
+            "SERVER"
+          ]
+        }
+      }
+    },
+    {
+      "name": "runtime-deploy-live-approved",
+      "tool": "runtime.deploy_live",
+      "input": {
+        "expectedRevision": "1",
+        "projectContentHash": "sha256:0c502a0ac94a3a28c3fc08d49cc40fb2220cf03d1967c168bfc1a386eae22319",
+        "targets": [
+          "SERVER"
+        ],
+        "pairingPreference": "NONE",
+        "draft": false
+      },
+      "leaseId": "workspace-lease",
+      "approvalGrant": "approved",
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "runtime": {
+            "phase": "RUNNING",
+            "savedRevision": "1",
+            "runningRevision": "1",
+            "sync": "RUNNING_SAVED",
+            "draft": false,
+            "message": "Project is live"
+          },
+          "deployedTargets": [
+            "SERVER"
+          ]
+        }
+      }
+    },
+    {
+      "name": "runtime-invoke-draft",
+      "tool": "runtime.invoke",
+      "input": {
+        "exportName": "invoke",
+        "environment": "DRAFT",
+        "params": [
+          {
+            "name": "enabled",
+            "type": "BOOLEAN",
+            "value": "true"
+          },
+          {
+            "name": "label",
+            "type": "STRING",
+            "value": "fixture"
+          }
+        ]
+      },
+      "setup": [
+        {
+          "tool": "runtime.test_draft",
+          "input": {
+            "expectedRevision": "1",
+            "targets": [
+              "SERVER"
+            ]
+          },
+          "leaseId": "workspace-lease"
+        }
+      ],
+      "leaseId": "workspace-lease",
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "resultType": "TEXT",
+          "result": "{\"ok\":true}",
+          "fuelUsed": "4",
+          "durationUs": 2
+        }
+      }
+    },
+    {
+      "name": "runtime-stop",
+      "tool": "runtime.stop",
+      "input": {},
+      "setup": [
+        {
+          "tool": "runtime.test_draft",
+          "input": {
+            "expectedRevision": "1",
+            "targets": [
+              "SERVER"
+            ]
+          },
+          "leaseId": "workspace-lease"
+        }
+      ],
+      "category": "success",
+      "expected": {
+        "status": "SUCCEEDED",
+        "output": {
+          "serverStopped": true,
+          "clientStopped": true,
+          "failures": []
+        }
+      }
+    },
+    {
+      "name": "runtime-deploy-live-approval-required",
+      "category": "approval",
+      "tool": "runtime.deploy_live",
+      "input": {
+        "expectedRevision": "1",
+        "projectContentHash": "sha256:0c502a0ac94a3a28c3fc08d49cc40fb2220cf03d1967c168bfc1a386eae22319",
+        "targets": [
+          "SERVER"
+        ],
+        "pairingPreference": "NONE",
+        "draft": false
+      },
+      "leaseId": "workspace-lease",
+      "expected": {
+        "status": "FAILED",
+        "errorCode": "AGENT_APPROVAL_REQUIRED"
+      }
+    },
+    {
+      "name": "studio-state-cancelled",
+      "category": "cancellation",
+      "tool": "studio.state.get",
+      "input": {},
+      "expected": {
+        "status": "CANCELLED",
+        "errorCode": "AGENT_CANCELLED"
+      }
+    },
+    {
+      "name": "runtime-test-draft-outcome-unknown",
+      "category": "outcome-unknown",
+      "tool": "runtime.test_draft",
+      "input": {
+        "expectedRevision": "1",
+        "targets": [
+          "SERVER"
+        ]
+      },
+      "leaseId": "workspace-lease",
+      "deadlineMs": 1,
+      "expected": {
+        "status": "OUTCOME_UNKNOWN",
+        "errorCode": "AGENT_TOOL_OUTCOME_UNKNOWN"
+      }
+    }
+  ]
+}

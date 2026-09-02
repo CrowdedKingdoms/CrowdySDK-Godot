@@ -1,0 +1,26 @@
+{
+  "contractVersion": "crowdy.studio-agent/1",
+  "crowdyJs": {
+    "version": "15.0.0",
+    "commit": "2b0a5a5aa269c3822a5db8fdde689519bee5fe86"
+  },
+  "digest": "sha256:81dd9cb78b5c171456430fe1b5aefa4a628ab17d7f2a35d1ed5bf78b31834dc1",
+  "reasons": [
+    "HUMAN_INPUT",
+    "HUMAN_EDIT",
+    "HUMAN_STOP",
+    "ESCAPE",
+    "DEATH",
+    "CONTEXT_CHANGED",
+    "PERMISSION_CHANGED",
+    "ADMISSION_CHANGED",
+    "CONTROL_TARGET_CHANGED",
+    "DISCONNECTED",
+    "CLIENT_REATTACHED",
+    "QUOTA_FAILURE",
+    "BUDGET_FAILURE",
+    "OPERATOR_KILL",
+    "LEASE_EXPIRED",
+    "SESSION_CLOSED"
+  ]
+}

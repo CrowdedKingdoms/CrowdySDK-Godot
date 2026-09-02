@@ -1,0 +1,26 @@
+# Control frames ONLY.
+#
+# udpNotifications is a union whose other members carry the browser UDP proxy's
+# gameplay fan-out. CrowdyCPP does not use that path — it speaks UDP natively —
+# so this selects nothing but RealtimeConnectionEvent, and every other member
+# contributes only its __typename.
+#
+# Subscribing at all is what a native client was missing. SERVER_DRAINING, the
+# advance warning that this API instance is being taken out of service, is
+# delivered here and nowhere else. Without it, a client pinned to one instance
+# under direct connect first learns the instance is going away when it stops
+# answering, which is precisely the case re-discovery is meant to get ahead of.
+#
+# Must be app-scoped or the server answers APP_ID_REQUIRED: game tokens are
+# app-agnostic and one socket is shared across apps.
+subscription RealtimeControlEvents {
+  udpNotifications {
+    __typename
+    ... on RealtimeConnectionEvent {
+      status
+      code
+      message
+      retryable
+    }
+  }
+}

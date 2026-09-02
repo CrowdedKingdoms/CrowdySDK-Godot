@@ -1,0 +1,18 @@
+query GameModelFunctionCircuits($appId: BigInt!, $name: String, $limit: Int) {
+  gameModelFunctionCircuits(appId: $appId, name: $name, limit: $limit) {
+    mode
+    failureThreshold
+    cooldownMs
+    circuits {
+      appId
+      functionName
+      circuitState
+      consecutiveFailures
+      cooldownUntil
+      openedAt
+      totalOpens
+      shadowRefusals
+      updatedAt
+    }
+  }
+}

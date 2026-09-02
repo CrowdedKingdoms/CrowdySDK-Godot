@@ -1,0 +1,30 @@
+{
+  "name": "crowdycpp-maintainer-tools",
+  "version": "0.26.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline parity and schema maintenance tools for CrowdyCPP",
+  "crowdyjsParityTarget": {
+    "version": "15.0.0",
+    "commit": "2b0a5a5aa269c3822a5db8fdde689519bee5fe86"
+  },
+  "scripts": {
+    "codegen": "node scripts/codegen.mjs",
+    "check:agent-fixtures": "node tools/parity/agent-fixtures.mjs",
+    "check:control-gate-fixtures": "node tools/parity/control-gate-fixtures.mjs",
+    "check:studio-host-fixtures": "node tools/parity/studio-host-fixtures.mjs",
+    "check:studio-state-fixtures": "node tools/parity/studio-state-fixtures.mjs",
+    "check:codegen": "node scripts/codegen.mjs --check",
+    "check:layout-fixtures": "node tools/parity/layout-fixtures.mjs",
+    "check:operations": "node --test tests/parity/codegen-operation-isolation.test.mjs",
+    "check:parity": "node tools/parity/parity.mjs --check docs/parity-matrix.md --strict",
+    "check:release": "npm run check:codegen && npm run check:parity && npm run check:agent-fixtures && npm run check:control-gate-fixtures && npm run check:studio-host-fixtures && npm run check:layout-fixtures && npm run check:studio-state-fixtures && npm test",
+    "test": "node --test tests/parity/*.test.mjs",
+    "parity:repin": "node tools/parity/repin.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@graphql-tools/merge": "^9.2.2",
+    "graphql": "^16.14.2"
+  }
+}

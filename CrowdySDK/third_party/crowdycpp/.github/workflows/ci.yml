@@ -1,0 +1,270 @@
+name: CI
+
+# Runs on a push to ANY branch. Under the three-branch model the interesting pushes are the
+# promotion merges — dev -> test -> prod — and `branches: [main]` would have run none of
+# them, leaving the branch a release is cut from unchecked.
+#
+# Releases live in release.yml and are cut by `<tier>/vX.Y.Z` TAGS, so there is no tag trigger
+# here. This file used to say CrowdyCPP had no release pipeline "because nothing in it
+# publishes an artifact an environment consumes" — true, and beside the point: consumers pin a
+# ref, and four consecutive versions shipped with no tag to pin. The release gates have
+# self-tests, and they run in the release-gates job below rather than only in the workflow they
+# guard, because a gate exercised only by the thing it gates is checked on exactly the runs
+# where it is too late to hear about it.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  content-policy:
+    # Bounded because an unbounded job runs to the six-hour default, and on the day
+    # release.yml shipped four jobs in one run sat over an hour inside `apt-get
+    # install` on hosted Ubuntu runners while the Windows and macOS legs passed. A
+    # hung job is worse than a failed one: nothing to read, and the run never ends.
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check public content policy
+        run: bash scripts/check-content-policy.sh
+
+  release-gates:
+    # Bounded because an unbounded job runs to the six-hour default, and on the day
+    # release.yml shipped four jobs in one run sat over an hour inside `apt-get
+    # install` on hosted Ubuntu runners while the Windows and macOS legs passed. A
+    # hung job is worse than a failed one: nothing to read, and the run never ends.
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 because resolve-release-tier.test.sh builds its own bare
+      # remote and clone; it does not read this checkout's history, but the script
+      # under test runs `git fetch`, and testing it in a shallow repository would
+      # exercise a different path than the release workflow takes.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Release tier gate refuses a tag outside its branch
+        run: scripts/ci/resolve-release-tier.test.sh
+      - name: Version gate refuses a tag that is not what the tree builds
+        run: scripts/ci/assert-tag-version.test.sh
+
+  parity-baseline:
+    # Bounded because an unbounded job runs to the six-hour default, and on the day
+    # release.yml shipped four jobs in one run sat over an hour inside `apt-get
+    # install` on hosted Ubuntu runners while the Windows and macOS legs passed. A
+    # hung job is worse than a failed one: nothing to read, and the run never ends.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read pinned CrowdyJS parity target
+        id: crowdyjs-target
+        run: |
+          echo "version=$(jq -r '.crowdyjsParityTarget.version' package.json)" >> "$GITHUB_OUTPUT"
+          echo "commit=$(jq -r '.crowdyjsParityTarget.commit' package.json)" >> "$GITHUB_OUTPUT"
+      - name: Check out pinned CrowdyJS parity target
+        uses: actions/checkout@v4
+        with:
+          repository: CrowdedKingdoms/CrowdyJS
+          ref: ${{ steps.crowdyjs-target.outputs.commit }}
+          path: CrowdyJS
+      - name: Verify exact CrowdyJS parity target
+        run: |
+          test "$(jq -r '.version' CrowdyJS/package.json)" = "${{ steps.crowdyjs-target.outputs.version }}"
+          test "$(git -C CrowdyJS rev-parse HEAD)" = "${{ steps.crowdyjs-target.outputs.commit }}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            CrowdyJS/package-lock.json
+      - name: Install CrowdyCPP maintainer tooling
+        run: npm ci
+      - name: Build pinned CrowdyJS fixtures and blueprints
+        working-directory: CrowdyJS
+        run: npm ci && npm run build
+      - name: Parser and gate unit tests
+        env:
+          CROWDYJS_PATH: ${{ github.workspace }}/CrowdyJS
+        run: npm test
+      - name: Check published endpoint schema snapshots
+        run: node scripts/schema-sync.mjs --check
+      - name: Check deterministic C++ codegen
+        run: node scripts/codegen.mjs --check
+      - name: Check schema, API, and generated matrix parity
+        run: >
+          node tools/parity/parity.mjs
+          --crowdyjs "$GITHUB_WORKSPACE/CrowdyJS"
+          --check docs/parity-matrix.md
+          --strict
+      - name: Check agent descriptor and preemption fixtures
+        run: >
+          node tools/parity/agent-fixtures.mjs
+          --crowdyjs "$GITHUB_WORKSPACE/CrowdyJS"
+      - name: Check Crowdy Studio layout fixture
+        run: >
+          node tools/parity/layout-fixtures.mjs
+          --crowdyjs "$GITHUB_WORKSPACE/CrowdyJS"
+      - name: Install native parity dependencies
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev
+      - name: Configure blueprint parity tool
+        run: >
+          cmake -S . -B build-parity -DCMAKE_BUILD_TYPE=Release
+          -DCROWDY_BUILD_PARITY_TOOLS=ON
+          -DCROWDY_BUILD_TESTS=OFF
+          -DCROWDY_BUILD_E2E=OFF
+          -DCROWDY_BUILD_BENCHMARKS=OFF
+          -DCROWDY_BUILD_EXAMPLES=OFF
+      - name: Build blueprint parity tool
+        run: cmake --build build-parity --target crowdy_blueprint_dump -j 4
+      - name: Check blueprint parity
+        run: |
+          node tools/parity/dump-blueprints.mjs "$GITHUB_WORKSPACE/CrowdyJS" > "$RUNNER_TEMP/crowdyjs-blueprints.json"
+          ./build-parity/crowdy_blueprint_dump > "$RUNNER_TEMP/crowdycpp-blueprints.json"
+          node tools/parity/blueprints-diff.mjs "$RUNNER_TEMP/crowdyjs-blueprints.json" "$RUNNER_TEMP/crowdycpp-blueprints.json"
+
+  build-test:
+    # Bounded because an unbounded job runs to the six-hour default, and on the day
+    # release.yml shipped four jobs in one run sat over an hour inside `apt-get
+    # install` on hosted Ubuntu runners while the Windows and macOS legs passed. A
+    # hung job is worse than a failed one: nothing to read, and the run never ends.
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        default_transports: ['ON', 'OFF']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev
+      - name: Install deps (macOS)
+        if: runner.os == 'macOS'
+        run: brew install openssl@3 curl || true
+      - name: Install deps (Windows)
+        if: runner.os == 'Windows'
+        run: vcpkg install curl openssl --triplet x64-windows
+      - name: Configure
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          -DCROWDY_WITH_CURL=${{ matrix.default_transports }}
+          -DCROWDY_WITH_CURL_WEBSOCKETS=${{ matrix.default_transports }}
+          -DCROWDY_BUILD_E2E=${{ runner.os == 'Windows' && 'OFF' || 'ON' }}
+          -DCROWDY_BUILD_BENCHMARKS=OFF
+          -DCROWDY_BUILD_EXAMPLES=OFF
+          ${{ runner.os == 'Windows' && '-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake' || '' }}
+      - name: Build
+        run: cmake --build build --config Release -j 4
+      - name: Unit tests
+        timeout-minutes: 10
+        run: ctest --test-dir build -C Release --timeout 120 --output-on-failure
+
+  no-exception-build-test:
+    # Bounded because an unbounded job runs to the six-hour default, and on the day
+    # release.yml shipped four jobs in one run sat over an hour inside `apt-get
+    # install` on hosted Ubuntu runners while the Windows and macOS legs passed. A
+    # hung job is worse than a failed one: nothing to read, and the run never ends.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev
+      - name: Configure non-throwing GraphQL compatibility paths
+        run: >
+          cmake -S . -B build-no-exceptions -DCMAKE_BUILD_TYPE=Release
+          -DCROWDY_NO_EXCEPTIONS=ON
+          -DCROWDY_BUILD_E2E=OFF
+          -DCROWDY_BUILD_BENCHMARKS=OFF
+      - name: Build
+        run: cmake --build build-no-exceptions -j 4
+      - name: Reduced no-exception unit matrix
+        run: >
+          ctest --test-dir build-no-exceptions
+          --output-on-failure
+      - name: Install and link no-exception umbrella consumer
+        run: |
+          cmake --install build-no-exceptions --prefix "$RUNNER_TEMP/crowdy-noexceptions"
+          test ! -e "$RUNNER_TEMP/crowdy-noexceptions/include/crowdy/agent/controller.hpp"
+          test ! -e "$RUNNER_TEMP/crowdy-noexceptions/include/crowdy/player_host/player_host.hpp"
+          test ! -e "$RUNNER_TEMP/crowdy-noexceptions/include/crowdy/domains/compute.hpp"
+          test ! -e "$RUNNER_TEMP/crowdy-noexceptions/include/crowdy/domains/crowdy_studio.hpp"
+          test ! -e "$RUNNER_TEMP/crowdy-noexceptions/include/crowdy/studio/controller.hpp"
+          test ! -e "$RUNNER_TEMP/crowdy-noexceptions/include/crowdy/studio/models.hpp"
+          test -e "$RUNNER_TEMP/crowdy-noexceptions/include/crowdy/studio/layout.hpp"
+          test -e "$RUNNER_TEMP/crowdy-noexceptions/include/crowdy/domains/crowdy_studio_agent.hpp"
+          shopt -s globstar
+          for header in "$RUNNER_TEMP"/crowdy-noexceptions/include/crowdy/**/*.hpp; do
+            printf '#include <%s>\nint main() { return 0; }\n' \
+              "${header#"$RUNNER_TEMP/crowdy-noexceptions/include/"}" |
+              c++ -std=c++20 -fno-exceptions \
+                -DCROWDY_NO_EXCEPTIONS=1 \
+                -I"$RUNNER_TEMP/crowdy-noexceptions/include" \
+                -fsyntax-only -x c++ -
+          done
+          cmake -S tests/consumer -B build-noexceptions-consumer \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/crowdy-noexceptions"
+          cmake --build build-noexceptions-consumer -j 4
+          ./build-noexceptions-consumer/crowdycpp_consumer
+
+  crypto-off-build-test:
+    # Bounded because an unbounded job runs to the six-hour default, and on the day
+    # release.yml shipped four jobs in one run sat over an hour inside `apt-get
+    # install` on hosted Ubuntu runners while the Windows and macOS legs passed. A
+    # hung job is worse than a failed one: nothing to read, and the run never ends.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install HTTP dependency
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
+      - name: Configure without OpenSSL
+        run: >
+          cmake -S . -B build-crypto-off -DCMAKE_BUILD_TYPE=Release
+          -DCROWDY_WITH_OPENSSL=OFF
+          -DCROWDY_BUILD_E2E=OFF
+          -DCROWDY_BUILD_BENCHMARKS=OFF
+          -DCROWDY_BUILD_EXAMPLES=OFF
+      - name: Build and test full client
+        run: >
+          cmake --build build-crypto-off -j 4 &&
+          ctest --test-dir build-crypto-off --output-on-failure
+      - name: Install and link external consumer
+        run: |
+          cmake --install build-crypto-off --prefix "$RUNNER_TEMP/crowdy-install"
+          test -e "$RUNNER_TEMP/crowdy-install/include/crowdy/studio/layout.hpp"
+          cmake -S tests/consumer -B build-crypto-off-consumer \
+            -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/crowdy-install"
+          cmake --build build-crypto-off-consumer -j 4
+          ./build-crypto-off-consumer/crowdycpp_consumer
+
+  asan-build-test:
+    # Bounded because an unbounded job runs to the six-hour default, and on the day
+    # release.yml shipped four jobs in one run sat over an hour inside `apt-get
+    # install` on hosted Ubuntu runners while the Windows and macOS legs passed. A
+    # hung job is worse than a failed one: nothing to read, and the run never ends.
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev
+      - name: Configure AddressSanitizer
+        run: >
+          cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug
+          -DCROWDY_ENABLE_ASAN=ON
+          -DCROWDY_BUILD_E2E=OFF
+          -DCROWDY_BUILD_BENCHMARKS=OFF
+          -DCROWDY_BUILD_EXAMPLES=OFF
+      - name: Build and run sanitizer regressions
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+        run: >
+          cmake --build build-asan -j 4 &&
+          ctest --test-dir build-asan --output-on-failure

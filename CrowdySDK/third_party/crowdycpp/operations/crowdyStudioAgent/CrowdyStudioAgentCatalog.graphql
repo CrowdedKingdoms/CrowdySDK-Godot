@@ -1,0 +1,28 @@
+query CpCrowdyStudioAgentCatalog {
+  cpCrowdyStudioAgentCatalog {
+    instanceEnabled
+    instanceId
+    datacenterCode
+    provider
+    platformPolicyVersion
+    defaultModelId
+    registryDigest
+    modes
+    riskClasses
+    models {
+      modelId
+      isDefault
+      selectable
+      inputMicrosPerMillion
+      outputMicrosPerMillion
+    }
+    tools {
+      name
+      summary
+      executor
+      modes
+      riskClass
+      approvalRequired
+    }
+  }
+}

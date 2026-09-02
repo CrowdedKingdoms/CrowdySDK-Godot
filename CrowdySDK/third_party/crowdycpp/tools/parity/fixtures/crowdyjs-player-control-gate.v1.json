@@ -1,0 +1,703 @@
+{
+  "fixtureVersion": 1,
+  "contractVersion": "crowdy.player-control-gate/1",
+  "crowdyJs": {
+    "version": "15.0.0",
+    "commit": "2b0a5a5aa269c3822a5db8fdde689519bee5fe86"
+  },
+  "construction": {
+    "clearAgentIntentRequired": true
+  },
+  "reasonVocabulary": [
+    "HUMAN_INPUT",
+    "HUMAN_EDIT",
+    "HUMAN_STOP",
+    "ESCAPE",
+    "DEATH",
+    "CONTEXT_CHANGED",
+    "PERMISSION_CHANGED",
+    "ADMISSION_CHANGED",
+    "CONTROL_TARGET_CHANGED",
+    "DISCONNECTED",
+    "CLIENT_REATTACHED",
+    "QUOTA_FAILURE",
+    "BUDGET_FAILURE",
+    "OPERATOR_KILL",
+    "LEASE_EXPIRED",
+    "SESSION_CLOSED"
+  ],
+  "defaults": {
+    "humanInputActiveMs": 150,
+    "initialSnapshot": {
+      "bound": false,
+      "activeLease": null,
+      "humanInputActive": false,
+      "offlineStop": false
+    },
+    "subscribedSnapshot": {
+      "bound": false,
+      "activeLease": null,
+      "humanInputActive": false,
+      "offlineStop": false
+    },
+    "boundSnapshot": {
+      "bound": true,
+      "activeLease": {
+        "leaseId": "lease-human",
+        "kind": "PLAY",
+        "status": "ACTIVE",
+        "clientEpoch": "1",
+        "scopes": [
+          "observe",
+          "locomotion",
+          "interact"
+        ],
+        "holder": "Current player",
+        "controlledEntityId": "player-1",
+        "hostCapabilityRevision": "capability-1",
+        "contextVersion": "context-1",
+        "grantedAt": "2026-07-24T00:00:00.000Z",
+        "expiresAt": "2026-07-24T00:01:00.000Z"
+      },
+      "humanInputActive": false,
+      "offlineStop": false
+    },
+    "humanInputOrder": [
+      "clear:human:HUMAN_INPUT",
+      "onPreempt:HUMAN_INPUT",
+      "snapshot:bound:none:HUMAN_INPUT:human:online",
+      "revoke:human:lease-human:HUMAN_INPUT",
+      "human-handler"
+    ],
+    "humanInputEmissions": [
+      {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_INPUT",
+        "humanInputActive": true,
+        "offlineStop": false
+      }
+    ],
+    "afterHumanInput": {
+      "bound": true,
+      "activeLease": null,
+      "lastPreemption": "HUMAN_INPUT",
+      "humanInputActive": true,
+      "offlineStop": false
+    },
+    "window": {
+      "activeAtZero": true,
+      "activeAt149Ms": true,
+      "activeAt150Ms": false
+    }
+  },
+  "rebindOfflineStop": {
+    "rebindOrder": [
+      "clear:first:CLIENT_REATTACHED",
+      "onPreempt:CLIENT_REATTACHED",
+      "snapshot:bound:none:CLIENT_REATTACHED:idle:online",
+      "snapshot:bound:lease-second:CLIENT_REATTACHED:idle:online"
+    ],
+    "rebindEmissions": [
+      {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "CLIENT_REATTACHED",
+        "humanInputActive": false,
+        "offlineStop": false
+      },
+      {
+        "bound": true,
+        "activeLease": {
+          "leaseId": "lease-second",
+          "kind": "PLAY",
+          "status": "ACTIVE",
+          "clientEpoch": "1",
+          "scopes": [
+            "observe",
+            "locomotion",
+            "interact"
+          ],
+          "holder": "Current player",
+          "controlledEntityId": "player-1",
+          "hostCapabilityRevision": "capability-1",
+          "contextVersion": "context-1",
+          "grantedAt": "2026-07-24T00:00:00.000Z",
+          "expiresAt": "2026-07-24T00:01:00.000Z"
+        },
+        "lastPreemption": "CLIENT_REATTACHED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    ],
+    "reboundSnapshot": {
+      "bound": true,
+      "activeLease": {
+        "leaseId": "lease-second",
+        "kind": "PLAY",
+        "status": "ACTIVE",
+        "clientEpoch": "1",
+        "scopes": [
+          "observe",
+          "locomotion",
+          "interact"
+        ],
+        "holder": "Current player",
+        "controlledEntityId": "player-1",
+        "hostCapabilityRevision": "capability-1",
+        "contextVersion": "context-1",
+        "grantedAt": "2026-07-24T00:00:00.000Z",
+        "expiresAt": "2026-07-24T00:01:00.000Z"
+      },
+      "lastPreemption": "CLIENT_REATTACHED",
+      "humanInputActive": false,
+      "offlineStop": false
+    },
+    "stopOrder": [
+      "clear:second:HUMAN_STOP",
+      "onPreempt:HUMAN_STOP",
+      "snapshot:bound:none:HUMAN_STOP:idle:offline-stop",
+      "stop:second",
+      "snapshot:bound:none:HUMAN_STOP:idle:offline-stop"
+    ],
+    "stopEmissions": [
+      {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_STOP",
+        "humanInputActive": false,
+        "offlineStop": true
+      },
+      {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_STOP",
+        "humanInputActive": false,
+        "offlineStop": true
+      }
+    ],
+    "stoppedSnapshot": {
+      "bound": true,
+      "activeLease": null,
+      "lastPreemption": "HUMAN_STOP",
+      "humanInputActive": false,
+      "offlineStop": true
+    },
+    "reboundAfterStopSnapshot": {
+      "bound": true,
+      "activeLease": {
+        "leaseId": "lease-reset",
+        "kind": "PLAY",
+        "status": "ACTIVE",
+        "clientEpoch": "1",
+        "scopes": [
+          "observe",
+          "locomotion",
+          "interact"
+        ],
+        "holder": "Current player",
+        "controlledEntityId": "player-1",
+        "hostCapabilityRevision": "capability-1",
+        "contextVersion": "context-1",
+        "grantedAt": "2026-07-24T00:00:00.000Z",
+        "expiresAt": "2026-07-24T00:01:00.000Z"
+      },
+      "lastPreemption": "HUMAN_STOP",
+      "humanInputActive": false,
+      "offlineStop": false
+    },
+    "unbindOrder": [
+      "clear:second:DISCONNECTED",
+      "onPreempt:DISCONNECTED",
+      "snapshot:bound:none:DISCONNECTED:idle:online",
+      "snapshot:unbound:none:DISCONNECTED:idle:online"
+    ],
+    "unbindEmissions": [
+      {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "DISCONNECTED",
+        "humanInputActive": false,
+        "offlineStop": false
+      },
+      {
+        "bound": false,
+        "activeLease": null,
+        "lastPreemption": "DISCONNECTED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    ],
+    "unboundSnapshot": {
+      "bound": false,
+      "activeLease": null,
+      "lastPreemption": "DISCONNECTED",
+      "humanInputActive": false,
+      "offlineStop": false
+    }
+  },
+  "imperativeHooks": [
+    {
+      "action": "keyboard",
+      "expectedReason": "HUMAN_INPUT",
+      "order": [
+        "clear:keyboard:HUMAN_INPUT",
+        "onPreempt:HUMAN_INPUT",
+        "revoke:keyboard:lease-keyboard:HUMAN_INPUT"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_INPUT",
+        "humanInputActive": true,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "escape",
+      "expectedReason": "ESCAPE",
+      "order": [
+        "clear:escape:ESCAPE",
+        "onPreempt:ESCAPE",
+        "revoke:escape:lease-escape:ESCAPE"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "ESCAPE",
+        "humanInputActive": true,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "pointer",
+      "expectedReason": "HUMAN_INPUT",
+      "order": [
+        "clear:pointer:HUMAN_INPUT",
+        "onPreempt:HUMAN_INPUT",
+        "revoke:pointer:lease-pointer:HUMAN_INPUT"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_INPUT",
+        "humanInputActive": true,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "movement",
+      "expectedReason": "HUMAN_INPUT",
+      "order": [
+        "clear:movement:HUMAN_INPUT",
+        "onPreempt:HUMAN_INPUT",
+        "revoke:movement:lease-movement:HUMAN_INPUT"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_INPUT",
+        "humanInputActive": true,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "pause",
+      "expectedReason": "HUMAN_STOP",
+      "order": [
+        "clear:pause:HUMAN_STOP",
+        "onPreempt:HUMAN_STOP",
+        "pause:pause"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_STOP",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "stop",
+      "expectedReason": "HUMAN_STOP",
+      "order": [
+        "clear:stop:HUMAN_STOP",
+        "onPreempt:HUMAN_STOP",
+        "stop:stop"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_STOP",
+        "humanInputActive": false,
+        "offlineStop": true
+      }
+    },
+    {
+      "action": "death",
+      "expectedReason": "DEATH",
+      "order": [
+        "clear:death:DEATH",
+        "onPreempt:DEATH",
+        "revoke:death:lease-death:DEATH"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "DEATH",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "contextChanged",
+      "expectedReason": "CONTEXT_CHANGED",
+      "order": [
+        "clear:contextChanged:CONTEXT_CHANGED",
+        "onPreempt:CONTEXT_CHANGED",
+        "revoke:contextChanged:lease-contextChanged:CONTEXT_CHANGED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "CONTEXT_CHANGED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "permissionChanged",
+      "expectedReason": "PERMISSION_CHANGED",
+      "order": [
+        "clear:permissionChanged:PERMISSION_CHANGED",
+        "onPreempt:PERMISSION_CHANGED",
+        "revoke:permissionChanged:lease-permissionChanged:PERMISSION_CHANGED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "PERMISSION_CHANGED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "controlTargetChanged",
+      "expectedReason": "CONTROL_TARGET_CHANGED",
+      "order": [
+        "clear:controlTargetChanged:CONTROL_TARGET_CHANGED",
+        "onPreempt:CONTROL_TARGET_CHANGED",
+        "revoke:controlTargetChanged:lease-controlTargetChanged:CONTROL_TARGET_CHANGED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "CONTROL_TARGET_CHANGED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "disconnected",
+      "expectedReason": "DISCONNECTED",
+      "order": [
+        "clear:disconnected:DISCONNECTED",
+        "onPreempt:DISCONNECTED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "DISCONNECTED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "pagehide",
+      "expectedReason": "DISCONNECTED",
+      "order": [
+        "clear:pagehide:DISCONNECTED",
+        "onPreempt:DISCONNECTED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "DISCONNECTED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "offline",
+      "expectedReason": "DISCONNECTED",
+      "order": [
+        "clear:offline:DISCONNECTED",
+        "onPreempt:DISCONNECTED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "DISCONNECTED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "action": "backgrounded",
+      "expectedReason": "DISCONNECTED",
+      "order": [
+        "clear:backgrounded:DISCONNECTED",
+        "onPreempt:DISCONNECTED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "DISCONNECTED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    }
+  ],
+  "imperativeReasons": [
+    {
+      "reason": "HUMAN_INPUT",
+      "order": [
+        "clear:reason:HUMAN_INPUT",
+        "onPreempt:HUMAN_INPUT",
+        "revoke:reason:lease-reason-0:HUMAN_INPUT"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_INPUT",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "HUMAN_EDIT",
+      "order": [
+        "clear:reason:HUMAN_EDIT",
+        "onPreempt:HUMAN_EDIT",
+        "revoke:reason:lease-reason-1:HUMAN_EDIT"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_EDIT",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "HUMAN_STOP",
+      "order": [
+        "clear:reason:HUMAN_STOP",
+        "onPreempt:HUMAN_STOP",
+        "revoke:reason:lease-reason-2:HUMAN_STOP"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "HUMAN_STOP",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "ESCAPE",
+      "order": [
+        "clear:reason:ESCAPE",
+        "onPreempt:ESCAPE",
+        "revoke:reason:lease-reason-3:ESCAPE"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "ESCAPE",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "DEATH",
+      "order": [
+        "clear:reason:DEATH",
+        "onPreempt:DEATH",
+        "revoke:reason:lease-reason-4:DEATH"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "DEATH",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "CONTEXT_CHANGED",
+      "order": [
+        "clear:reason:CONTEXT_CHANGED",
+        "onPreempt:CONTEXT_CHANGED",
+        "revoke:reason:lease-reason-5:CONTEXT_CHANGED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "CONTEXT_CHANGED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "PERMISSION_CHANGED",
+      "order": [
+        "clear:reason:PERMISSION_CHANGED",
+        "onPreempt:PERMISSION_CHANGED",
+        "revoke:reason:lease-reason-6:PERMISSION_CHANGED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "PERMISSION_CHANGED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "ADMISSION_CHANGED",
+      "order": [
+        "clear:reason:ADMISSION_CHANGED",
+        "onPreempt:ADMISSION_CHANGED",
+        "revoke:reason:lease-reason-7:ADMISSION_CHANGED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "ADMISSION_CHANGED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "CONTROL_TARGET_CHANGED",
+      "order": [
+        "clear:reason:CONTROL_TARGET_CHANGED",
+        "onPreempt:CONTROL_TARGET_CHANGED",
+        "revoke:reason:lease-reason-8:CONTROL_TARGET_CHANGED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "CONTROL_TARGET_CHANGED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "DISCONNECTED",
+      "order": [
+        "clear:reason:DISCONNECTED",
+        "onPreempt:DISCONNECTED",
+        "revoke:reason:lease-reason-9:DISCONNECTED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "DISCONNECTED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "CLIENT_REATTACHED",
+      "order": [
+        "clear:reason:CLIENT_REATTACHED",
+        "onPreempt:CLIENT_REATTACHED",
+        "revoke:reason:lease-reason-10:CLIENT_REATTACHED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "CLIENT_REATTACHED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "QUOTA_FAILURE",
+      "order": [
+        "clear:reason:QUOTA_FAILURE",
+        "onPreempt:QUOTA_FAILURE",
+        "revoke:reason:lease-reason-11:QUOTA_FAILURE"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "QUOTA_FAILURE",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "BUDGET_FAILURE",
+      "order": [
+        "clear:reason:BUDGET_FAILURE",
+        "onPreempt:BUDGET_FAILURE",
+        "revoke:reason:lease-reason-12:BUDGET_FAILURE"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "BUDGET_FAILURE",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "OPERATOR_KILL",
+      "order": [
+        "clear:reason:OPERATOR_KILL",
+        "onPreempt:OPERATOR_KILL",
+        "revoke:reason:lease-reason-13:OPERATOR_KILL"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "OPERATOR_KILL",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "LEASE_EXPIRED",
+      "order": [
+        "clear:reason:LEASE_EXPIRED",
+        "onPreempt:LEASE_EXPIRED",
+        "revoke:reason:lease-reason-14:LEASE_EXPIRED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "LEASE_EXPIRED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    },
+    {
+      "reason": "SESSION_CLOSED",
+      "order": [
+        "clear:reason:SESSION_CLOSED",
+        "onPreempt:SESSION_CLOSED",
+        "revoke:reason:lease-reason-15:SESSION_CLOSED"
+      ],
+      "snapshot": {
+        "bound": true,
+        "activeLease": null,
+        "lastPreemption": "SESSION_CLOSED",
+        "humanInputActive": false,
+        "offlineStop": false
+      }
+    }
+  ]
+}
