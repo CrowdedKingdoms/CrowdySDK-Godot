@@ -1,9 +1,0 @@
-query UserAppState($appId: BigInt!) {
-  userAppState(appId: $appId) {
-    userId
-    appId
-    state
-    createdAt
-    updatedAt
-  }
-}

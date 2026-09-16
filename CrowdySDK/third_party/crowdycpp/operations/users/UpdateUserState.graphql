@@ -1,7 +1,0 @@
-mutation UpdateUserState($input: UpdateUserStateInput!) {
-  updateUserState(input: $input) {
-    userId
-    state
-    userType
-  }
-}

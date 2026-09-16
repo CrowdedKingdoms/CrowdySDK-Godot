@@ -261,7 +261,7 @@ public:
 	void initialize(const String& management_url) {
 		crowdy::ClientConfig cfg;
 
-		cfg.httpUrl = (std::string)management_url.utf8();
+		cfg.httpUrl = (std::string)management_url.utf8().ptr();
 		cfg.transport = crowdy::graphql::makeCurlTransport();
 		cfg.asyncTransport = std::make_shared<ThreadedAsyncTransport>(cfg.transport);
 
@@ -316,7 +316,7 @@ public:
 
 	String login(const String& email, const String& password) {
 		try {
-			auto auth = identityClient->auth().login((std::string)email.utf8(), (std::string)password.utf8());
+			auto auth = identityClient->auth().login((std::string)email.utf8().ptr(), (std::string)password.utf8().ptr());
 
 			std::ostringstream o;
 			o << "{\"ok\":true,\"token\":\"" << auth.token << "\",";
@@ -333,7 +333,7 @@ public:
 
 	void login_async(const String& email, const String& password, const Callable& cb) {
 		try {
-			identityClient->auth().loginAsync((std::string)email.utf8(), (std::string)password.utf8(),
+			identityClient->auth().loginAsync((std::string)email.utf8().ptr(), (std::string)password.utf8().ptr(),
 				[this, cb](graphql::GraphQLOutcome out, crowdy::domains::AuthResponse auth) mutable {
 					std::ostringstream o;
 					if (out.ok()) {
@@ -357,7 +357,7 @@ public:
 
 	String register_user(const String& email, const String& password, const String& gamertag) {
 		try {
-			auto auth = identityClient->auth().registerUser((std::string)email.utf8(), (std::string)password.utf8(), (std::string)gamertag.utf8());
+			auto auth = identityClient->auth().registerUser((std::string)email.utf8().ptr(), (std::string)password.utf8().ptr(), (std::string)gamertag.utf8().ptr());
 
 			std::ostringstream o;
 			o << "{\"ok\":true,\"token\":\"" << auth.token << "\",";
@@ -374,7 +374,7 @@ public:
 
 	void register_user_async(const String& email, const String& password, const String& gamertag, const Callable& cb) {
 		try {
-			identityClient->auth().registerUserAsync((std::string)email.utf8(), (std::string)password.utf8(), (std::string)gamertag.utf8(),
+			identityClient->auth().registerUserAsync((std::string)email.utf8().ptr(), (std::string)password.utf8().ptr(), (std::string)gamertag.utf8().ptr(),
 				[this, cb](graphql::GraphQLOutcome out, crowdy::domains::AuthResponse auth) mutable {
 					std::ostringstream o;
 					if (out.ok()) {
@@ -436,7 +436,7 @@ public:
 		// Basic passthrough (synchronous). This is small convenience helper for
 		// quick tests; prefer the higher-level helpers below for auth flows.
 		try {
-			auto res = identityClient->graphqlClient().request((std::string)query.utf8());
+			auto res = identityClient->graphqlClient().request((std::string)query.utf8().ptr());	
 			return String(res.dump().c_str());
 		}
 		catch (const std::exception& e) {
@@ -449,7 +449,7 @@ public:
 	// Request a magic login link (passwordless). Returns the server response JSON.
 	String request_login_link(const String& email, const String& redirect_uri) {
 		try {
-			auto resp = identityClient->auth().requestLoginLink((std::string)email.utf8(), (std::string)redirect_uri.utf8());
+			auto resp = identityClient->auth().requestLoginLink((std::string)email.utf8().ptr(), (std::string)redirect_uri.utf8().ptr());
 			return String(resp.dump().c_str());
 		}
 		catch (const std::exception& e) {
@@ -486,7 +486,7 @@ public:
 			// New connection generation
 			uint64_t gen = conn_generation_.fetch_add(1, std::memory_order_acq_rel) + 1;
 
-			std::string app = (std::string)app_id.utf8();
+			std::string app = (std::string)app_id.utf8().ptr();
 
 			auto token = identityClient->portal().mintAppToken(app);
 
@@ -578,7 +578,7 @@ public:
 	// should be registered via replication_set_event_callback and replication_set_status_callback.
 	void replication_connect_async(const String& app_id, const Callable& connect_cb) {
 		try {
-			std::string app = (std::string)app_id.utf8();
+			std::string app = (std::string)app_id.utf8().ptr();
 			// First mint app token asynchronously
 			identityClient->portal().mintAppTokenAsync(app, [this, connect_cb](crowdy::graphql::GraphQLOutcome out, crowdy::domains::AppTokenResponse token) mutable {
 				if (!out.ok()) {
@@ -707,7 +707,7 @@ public:
 		if (!replConn) return String("{\"ok\":false,\"error\":\"no connection\"}");
 		try {
 			crowdy::session::WorldSessionConfig cfg;
-			cfg.appId = (std::string)app_id.utf8();
+			cfg.appId = (std::string)app_id.utf8().ptr();
 			worldSession = std::make_unique<crowdy::session::WorldSession>(replConn, identityClient.get(), cfg);
 			return String("{\"ok\":true}");
 		}
@@ -783,8 +783,8 @@ public:
 		}
 
 		crowdy::core::ActorUuid uuid{};
-		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
-		auto v = crowdy::core::base64Decode((std::string)state_base64.utf8());
+		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8().ptr(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
+		auto v = crowdy::core::base64Decode((std::string)state_base64.utf8().ptr());
 		if (!v.has_value()) return String("{\"ok\":false,\"error\":\"invalid base64\"}");
 		std::vector<std::uint8_t>& bytes = *v;
 		crowdy::replication::SpatialSend p;
@@ -804,8 +804,8 @@ public:
 	String replication_send_actor_update_and_wait(const String& uuid_hex, int x, int y, int z, const String& state_base64, int timeout_ms) {
 		if (!replConn) return String("{\"ok\":false,\"error\":\"not connected\"}");
 		crowdy::core::ActorUuid uuid{};
-		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
-		auto v = crowdy::core::base64Decode((std::string)state_base64.utf8());
+		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8().ptr(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
+		auto v = crowdy::core::base64Decode((std::string)state_base64.utf8().ptr());
 		if (!v.has_value()) return String("{\"ok\":false,\"error\":\"invalid base64\"}");
 		std::vector<std::uint8_t>& bytes = *v;
 		crowdy::replication::SpatialSend p;
@@ -830,8 +830,8 @@ public:
 		// against delivering callbacks after a disconnect/reconnect.
 		auto conn = replConn;
 		uint64_t gen = conn_generation_.load(std::memory_order_acquire);
-		std::string suuid = (std::string)uuid_hex.utf8();
-		std::string sstate = (std::string)state_base64.utf8();
+		std::string suuid = (std::string)uuid_hex.utf8().ptr();
+		std::string sstate = (std::string)state_base64.utf8().ptr();
 		std::thread([this, conn, suuid, x, y, z, sstate, timeout_ms, cb, gen]() mutable {
 			crowdy::core::ActorUuid uuid{};
 			if (!actor_uuid_from_hex(suuid, uuid)) {
@@ -867,7 +867,7 @@ public:
 	String replication_send_heartbeat(const String& uuid_hex, int x, int y, int z) {
 		if (!replConn) return String("{\"ok\":false,\"error\":\"not connected\"}");
 		crowdy::core::ActorUuid uuid{};
-		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
+		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8().ptr(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
 		crowdy::wire::ChunkCoord chunk; chunk.x = x; chunk.y = y; chunk.z = z;
 		auto seq = replConn->sendHeartbeat(chunk, uuid);
 		if (!seq.ok()) return String("{\"ok\":false,\"error\":\"send failed\"}");
@@ -879,8 +879,8 @@ public:
 	String replication_send_channel_message(int64_t channel_id, const String& uuid_hex, const String& payload_base64) {
 		if (!replConn) return String("{\"ok\":false,\"error\":\"not connected\"}");
 		crowdy::core::ActorUuid uuid{};
-		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
-		auto v = crowdy::core::base64Decode((std::string)payload_base64.utf8());
+		if (!actor_uuid_from_hex((std::string)uuid_hex.utf8().ptr(), uuid)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
+		auto v = crowdy::core::base64Decode((std::string)payload_base64.utf8().ptr());
 		if (!v.has_value()) return String("{\"ok\":false,\"error\":\"invalid base64\"}");
 		std::vector<std::uint8_t>& bytes = *v;
 		auto res = replConn->sendChannelMessage(channel_id, uuid, crowdy::Bytes(bytes.data(), bytes.size()));
@@ -893,8 +893,8 @@ public:
 	String replication_send_single_actor_message(int x, int y, int z, const String& target_uuid_hex, const String& payload_base64) {
 		if (!replConn) return String("{\"ok\":false,\"error\":\"not connected\"}");
 		crowdy::core::ActorUuid target{};
-		if (!actor_uuid_from_hex((std::string)target_uuid_hex.utf8(), target)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
-		auto v = crowdy::core::base64Decode((std::string)payload_base64.utf8());
+		if (!actor_uuid_from_hex((std::string)target_uuid_hex.utf8().ptr(), target)) return String("{\"ok\":false,\"error\":\"invalid uuid\"}");
+		auto v = crowdy::core::base64Decode((std::string)payload_base64.utf8().ptr());
 		if (!v.has_value()) return String("{\"ok\":false,\"error\":\"invalid base64\"}");
 		std::vector<std::uint8_t>& bytes = *v;
 		crowdy::wire::ChunkCoord chunk; chunk.x = x; chunk.y = y; chunk.z = z;

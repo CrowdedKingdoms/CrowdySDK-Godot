@@ -1,3 +1,0 @@
-mutation LeaveChannel($groupId: BigInt!) {
-  leaveChannel(groupId: $groupId)
-}

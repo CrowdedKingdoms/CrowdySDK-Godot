@@ -1,3 +1,0 @@
-mutation RemoveTeamMember($groupId: BigInt!, $userId: BigInt!) {
-  removeTeamMember(groupId: $groupId, userId: $userId)
-}

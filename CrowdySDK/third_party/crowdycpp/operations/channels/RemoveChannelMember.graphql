@@ -1,3 +1,0 @@
-mutation RemoveChannelMember($groupId: BigInt!, $userId: BigInt!) {
-  removeChannelMember(groupId: $groupId, userId: $userId)
-}

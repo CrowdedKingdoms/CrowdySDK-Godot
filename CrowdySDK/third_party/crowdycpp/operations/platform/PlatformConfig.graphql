@@ -1,7 +1,0 @@
-query PlatformConfig {
-  platformConfig {
-    sharedGameApiUrl
-    sharedGameApiWsUrl
-    freeAppsPerOrg
-  }
-}

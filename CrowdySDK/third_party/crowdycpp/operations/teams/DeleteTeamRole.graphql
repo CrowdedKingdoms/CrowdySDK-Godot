@@ -1,3 +1,0 @@
-mutation DeleteTeamRole($groupRoleId: BigInt!) {
-  deleteTeamRole(groupRoleId: $groupRoleId)
-}

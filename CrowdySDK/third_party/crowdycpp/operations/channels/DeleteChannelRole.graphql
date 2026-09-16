@@ -1,3 +1,0 @@
-mutation DeleteChannelRole($groupRoleId: BigInt!) {
-  deleteChannelRole(groupRoleId: $groupRoleId)
-}

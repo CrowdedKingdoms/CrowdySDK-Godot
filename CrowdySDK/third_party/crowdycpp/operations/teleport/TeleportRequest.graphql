@@ -1,6 +1,0 @@
-mutation TeleportRequest($input: TeleportRequestInput!) {
-  teleportRequest(input: $input) {
-    success
-    errorCode
-  }
-}

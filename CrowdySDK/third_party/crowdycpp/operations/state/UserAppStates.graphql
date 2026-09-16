@@ -1,9 +1,0 @@
-query UserAppStates {
-  userAppStates {
-    userId
-    appId
-    state
-    createdAt
-    updatedAt
-  }
-}

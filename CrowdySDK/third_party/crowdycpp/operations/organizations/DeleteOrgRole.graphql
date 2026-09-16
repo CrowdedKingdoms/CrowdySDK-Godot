@@ -1,3 +1,0 @@
-mutation DeleteOrgRole($orgRoleId: BigInt!) {
-  deleteOrgRole(orgRoleId: $orgRoleId)
-}

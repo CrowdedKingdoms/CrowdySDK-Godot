@@ -11,8 +11,7 @@ Write-Host "Building CrowdyCPP GDExtension (Windows)"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ([string]::IsNullOrEmpty($Root)) {
-	# Default to two levels up from the script directory (the project root)
-	$root = (Resolve-Path ($scriptDir)).Path
+    $root = (Resolve-Path (Join-Path $scriptDir "..")).Path
 } else {
 	$root = (Resolve-Path $Root).Path
 }
@@ -20,7 +19,7 @@ Write-Host "Workspace root: $root"
 
 $godot_cpp_dir = Join-Path $root "third_party\godotcpp"
 $crowdycpp_dir = Join-Path $root "third_party\crowdycpp"
-$ext_native = Join-Path $root "native"
+$ext_native = Join-Path $root "CrowdySDK\native"
 
 # Autodetect Visual Studio when a VS generator was not provided or when the
 # requested Visual Studio generator is not available on this machine. We use
@@ -117,7 +116,10 @@ function Run-CmakeBuild($src, $buildDir, $target = $null, $configureOptions = ""
 $godotConfigureOpts = ""
 if (-Not [string]::IsNullOrEmpty($Arch)) { $godotConfigureOpts += " -A $Arch" }
 if (-Not [string]::IsNullOrEmpty($Toolchain)) { $godotConfigureOpts += " -DCMAKE_TOOLCHAIN_FILE=`"$Toolchain`"" }
+
 $godotConfigureOpts += " -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL"
+$godotConfigureOpts += " -DGODOTCPP_API_VERSION=4-7"
+
 try {
 	Run-CmakeBuild $godot_cpp_dir $godot_build_dir "godot-cpp" $godotConfigureOpts
 } catch {
@@ -158,7 +160,9 @@ if (-Not (Test-Path $ext_build)) { New-Item -ItemType Directory -Path $ext_build
 $extConfigureOpts = ""
 if (-Not [string]::IsNullOrEmpty($Arch)) { $extConfigureOpts += " -A $Arch" }
 if (-Not [string]::IsNullOrEmpty($Toolchain)) { $extConfigureOpts += " -DCMAKE_TOOLCHAIN_FILE=`"$Toolchain`"" }
+
 $extConfigureOpts += " -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL"
+$extConfigureOpts += " -DGODOTCPP_API_VERSION=4-7"
 
 # Pass absolute paths for the dependency dirs
 $absCrowdy = (Resolve-Path $crowdycpp_dir).Path

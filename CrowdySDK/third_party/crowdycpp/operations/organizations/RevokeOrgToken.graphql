@@ -1,3 +1,0 @@
-mutation RevokeOrgToken($orgTokenId: BigInt!) {
-  revokeOrgToken(orgTokenId: $orgTokenId)
-}

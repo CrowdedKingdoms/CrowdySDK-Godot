@@ -1,3 +1,0 @@
-mutation DeleteChannel($groupId: BigInt!) {
-  deleteChannel(groupId: $groupId)
-}
