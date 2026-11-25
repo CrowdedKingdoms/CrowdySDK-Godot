@@ -16,16 +16,16 @@ config/features=PackedStringArray("4.7")
 
 [autoload]
 
-AuthService="*uid://d21thchikp8qp"
-CrowdyTest="*uid://dm1x3wkkxrhsk"
-ReplicationService="*uid://cml1ja58u6w8r"
-Config="*uid://bx26c7av7xmkc"
+Crowdy="*res://addons/crowdy_sdk/crowdy.gd"
 
-[game]
+[crowdy]
 
-game_api_url="https://ck.dev.crowdedkingdoms.com/graphql"
-app_id="83702098168832 "
-ws_url="wss://ck.dev.crowdedkingdoms.com"
+api_url="https://ck.dev.crowdedkingdoms.com"
+app_id="83702098168832"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/crowdy_sdk/plugin.cfg")
 
 [input]
 

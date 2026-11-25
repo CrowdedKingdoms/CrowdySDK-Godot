@@ -1,0 +1,18 @@
+[configuration]
+
+entry_symbol = "crowdy_sdk_library_init"
+; Keep in sync with GODOTCPP_API_VERSION in native/CMakeLists.txt.
+compatibility_minimum = "4.7"
+
+[libraries]
+
+windows.x86_64 = "res://addons/crowdy_sdk/bin/crowdy_sdk.windows.x86_64.dll"
+
+; Libraries the extension loads, which an export must ship next to the game's executable.
+[dependencies]
+
+windows.x86_64 = {
+"res://addons/crowdy_sdk/bin/libcurl.dll": "",
+"res://addons/crowdy_sdk/bin/libcrypto-3-x64.dll": "",
+"res://addons/crowdy_sdk/bin/z.dll": ""
+}
