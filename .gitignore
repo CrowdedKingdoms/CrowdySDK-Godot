@@ -1,0 +1,16 @@
+# Godot
+.godot/
+*.tmp
+export_presets.cfg
+
+# Native build tree and the libraries it produces (native/build_windows.ps1)
+native/build/
+bin/
+
+# Editors
+.vs/
+.vscode/
+.idea/
+
+# Signing certificates
+*.pfx

@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="DemoInfo" format=3]
+
+[ext_resource type="Script" path="res://demos/common/demo_info.gd" id="1_demo_info"]
+[ext_resource type="Resource" path="res://demos/push_arena/session_config.tres" id="2_session_config"]
+
+[resource]
+script = ExtResource("1_demo_info")
+title = "Push Arena"
+world_scene = "res://demos/push_arena/arena.tscn"
+online_scene = "res://demos/push_arena/lobby/arena_lobby.tscn"
+session_config = ExtResource("2_session_config")

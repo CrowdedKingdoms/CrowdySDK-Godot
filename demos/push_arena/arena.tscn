@@ -1,0 +1,90 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://demos/push_arena/arena.gd" id="1_arena"]
+[ext_resource type="Script" path="res://demos/push_arena/stage/arena_platform.gd" id="2_platform"]
+[ext_resource type="PackedScene" path="res://demos/push_arena/player/local_arena_player.tscn" id="3_local_player"]
+[ext_resource type="Script" path="res://demos/push_arena/rules/referee.gd" id="4_referee"]
+[ext_resource type="PackedScene" path="res://demos/push_arena/hud/arena_hud.tscn" id="5_hud"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_top_color = Color(0.22, 0.3, 0.48, 1)
+sky_horizon_color = Color(0.6, 0.55, 0.62, 1)
+ground_bottom_color = Color(0.05, 0.05, 0.09, 1)
+ground_horizon_color = Color(0.6, 0.55, 0.62, 1)
+
+[sub_resource type="Sky" id="Sky_sky"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_arena"]
+background_mode = 2
+sky = SubResource("Sky_sky")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_platform"]
+height = 1.0
+radius = 4.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_platform"]
+albedo_color = Color(0.72, 0.7, 0.66, 1)
+roughness = 0.85
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_platform"]
+material = SubResource("StandardMaterial3D_platform")
+top_radius = 4.5
+bottom_radius = 4.5
+height = 1.0
+radial_segments = 96
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_portal"]
+albedo_color = Color(0.3, 0.8, 1, 1)
+emission_enabled = true
+emission = Color(0.3, 0.8, 1, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="TorusMesh" id="TorusMesh_portal"]
+material = SubResource("StandardMaterial3D_portal")
+inner_radius = 0.9
+outer_radius = 1.05
+rings = 48
+
+[node name="PushArena" type="Node3D"]
+script = ExtResource("1_arena")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_arena")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Platform" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+script = ExtResource("2_platform")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Platform"]
+shape = SubResource("CylinderShape3D_platform")
+
+[node name="Mesh" type="MeshInstance3D" parent="Platform"]
+mesh = SubResource("CylinderMesh_platform")
+
+[node name="Portal" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+
+[node name="Ring" type="MeshInstance3D" parent="Portal"]
+mesh = SubResource("TorusMesh_portal")
+
+[node name="Glow" type="OmniLight3D" parent="Portal"]
+light_color = Color(0.3, 0.8, 1, 1)
+light_energy = 2.0
+omni_range = 6.0
+
+[node name="LocalPlayer" parent="." instance=ExtResource("3_local_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+
+[node name="RemotePlayers" type="Node3D" parent="."]
+
+[node name="Referee" type="Node" parent="."]
+script = ExtResource("4_referee")
+
+[node name="Hud" parent="." instance=ExtResource("5_hud")]

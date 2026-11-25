@@ -1,0 +1,126 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://demos/push_arena/lobby/arena_lobby.gd" id="1_script"]
+[ext_resource type="Theme" path="res://demos/common/menu_theme.tres" id="2_theme"]
+
+[node name="ArenaLobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = -300.0
+offset_right = 360.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="Title" type="Label" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"LargeLabel"
+text = "Push Arena"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="BtnPublicArena" type="Button" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"LargeButton"
+text = "Play the public arena (Endless)"
+
+[node name="PublicMatchesHeader" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Content/PublicMatchesHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Public matches"
+
+[node name="BtnRefresh" type="Button" parent="Content/PublicMatchesHeader"]
+layout_mode = 2
+text = "Refresh"
+
+[node name="MatchList" type="VBoxContainer" parent="Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="CreateRow" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="Content/CreateRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New match"
+
+[node name="ModeOption" type="OptionButton" parent="Content/CreateRow"]
+unique_name_in_owner = true
+layout_mode = 2
+selected = 0
+item_count = 2
+popup/item_0/text = "Rounds"
+popup/item_0/id = 0
+popup/item_1/text = "Endless"
+popup/item_1/id = 1
+
+[node name="VisibilityOption" type="OptionButton" parent="Content/CreateRow"]
+unique_name_in_owner = true
+layout_mode = 2
+selected = 0
+item_count = 2
+popup/item_0/text = "Public"
+popup/item_0/id = 0
+popup/item_1/text = "Private"
+popup/item_1/id = 1
+
+[node name="BtnCreate" type="Button" parent="Content/CreateRow"]
+layout_mode = 2
+text = "Create"
+
+[node name="JoinRow" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="Content/JoinRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Private match"
+
+[node name="CoordinatesField" type="LineEdit" parent="Content/JoinRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 0)
+layout_mode = 2
+placeholder_text = "x, z"
+
+[node name="BtnJoin" type="Button" parent="Content/JoinRow"]
+layout_mode = 2
+text = "Join"
+
+[node name="BtnBack" type="Button" parent="Content"]
+layout_mode = 2
+theme_type_variation = &"LargeButton"
+text = "Back"
+
+[connection signal="pressed" from="Content/BtnPublicArena" to="." method="_on_btn_public_arena_pressed"]
+[connection signal="pressed" from="Content/PublicMatchesHeader/BtnRefresh" to="." method="_on_btn_refresh_pressed"]
+[connection signal="pressed" from="Content/CreateRow/BtnCreate" to="." method="_on_btn_create_pressed"]
+[connection signal="pressed" from="Content/JoinRow/BtnJoin" to="." method="_on_btn_join_pressed"]
+[connection signal="pressed" from="Content/BtnBack" to="." method="_on_btn_back_pressed"]
