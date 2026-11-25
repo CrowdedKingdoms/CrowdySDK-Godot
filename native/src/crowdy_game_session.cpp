@@ -409,6 +409,11 @@ void CrowdyGameSession::create_world() {
 	// WorldSession routes events per type only; every type goes to one signal here.
 	crowdy::replication::Handlers handlers = game.connection->snapshot().handlers;
 	handlers.clientEvent = [this](const crowdy::replication::SpatialNotification &p_notification, const crowdy::wire::EventPayloadView &p_event) {
+		// The server also delivers a client event to its sender. Like remote actors, events are
+		// reported from other actors only.
+		if (p_notification.uuidArray() == world->actorUuid()) {
+			return;
+		}
 		queue_signal("event_received", int64_t(p_event.eventType), to_actor_id(p_notification.uuid), to_packed_bytes(p_event.state), false);
 	};
 	handlers.serverEvent = [this](const crowdy::replication::SpatialNotification &p_notification, const crowdy::wire::EventPayloadView &p_event) {

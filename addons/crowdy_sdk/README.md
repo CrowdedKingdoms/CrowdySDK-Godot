@@ -120,7 +120,7 @@ Created with `CrowdyIdentity.create(api_url, persist_session)`; `Crowdy.identity
 | `move_to_chunk(chunk) -> Error` | Call every frame; sends at once when the chunk changes. |
 | `get_actor_id() -> String` | The local actor's 32-character id. |
 | `get_remote_actors() -> Array` | `{actor_id, chunk, state, server_time_ms}` for every actor in range. |
-| `send_event(event_type, payload) -> Error` | A typed event (0–65535) to nearby actors: game commands, emotes. |
+| `send_event(event_type, payload) -> Error` | A typed event (0–65535) to nearby actors: game commands, emotes. The sender's own `event_received` does not fire for it. |
 | `send_text(text) -> Error` | Proximity chat. |
 | `send_channel_message(channel_id, payload) -> Error` | To a channel the player is a member of. |
 | `send_direct_message(actor_id, chunk, payload) -> Error` | To one actor. The receiver is not told the sender; put it in the payload. |
