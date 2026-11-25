@@ -5,4 +5,3 @@
 [resource]
 script = ExtResource("1_config")
 send_rate_hz = 20
-host_tracking = true

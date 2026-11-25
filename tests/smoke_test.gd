@@ -75,6 +75,10 @@ func _test_session() -> void:
 	_check(reconnected.error_code == "NOT_STARTED", "reconnect() before start() is refused (got %s)" % reconnected)
 	_check(_session.join(Vector3i.ZERO, PackedByteArray([1])) == ERR_UNCONFIGURED, "join() before start() returns ERR_UNCONFIGURED")
 	_check(_session.send_event(1, PackedByteArray()) == ERR_UNCONFIGURED, "send_event() before start() returns ERR_UNCONFIGURED")
+	_check(_session.send_voxel_update(Vector3i.ZERO, Vector3i(-1, 0, 0), 1000, PackedByteArray([1])) == ERR_UNCONFIGURED, "send_voxel_update() before start() returns ERR_UNCONFIGURED")
+	var voxels: CrowdyResult = await _session.fetch_voxels(Vector3i.ZERO, Vector3i.ONE).completed
+	_check(voxels.error_code == "NOT_STARTED", "fetch_voxels() before start() is refused (got %s)" % voxels)
+	_check(_session.has_signal("voxel_updated"), "the session reports voxel edits with voxel_updated")
 	_check(_session.get_remote_actors().is_empty() and _session.get_actor_id().is_empty(), "no actors before start()")
 	_session = null
 

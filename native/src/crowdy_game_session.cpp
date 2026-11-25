@@ -3,8 +3,12 @@
 #include "client_config.h"
 #include "conversions.h"
 
+#include <crowdy/core/base64.hpp>
+#include <crowdy/core/clock.hpp>
+
 #include <godot_cpp/core/class_db.hpp>
 
+#include <cstdlib>
 #include <exception>
 #include <limits>
 #include <optional>
@@ -16,7 +20,49 @@ namespace crowdy_godot {
 
 namespace {
 
+using crowdy::graphql::GraphQLOutcome;
 using crowdy::session::SendKind;
+
+// The most chunks one fetch_voxels() reads: the platform's limit for a box, 17 x 17 x 17.
+constexpr int64_t MAX_FETCH_CHUNKS = 4913;
+
+bool fits_int16(int64_t p_value) {
+	return p_value >= std::numeric_limits<int16_t>::min() && p_value <= std::numeric_limits<int16_t>::max();
+}
+
+crowdy::domains::ChunkRef to_chunk_ref(const Vector3i &p_chunk) {
+	return crowdy::domains::ChunkRef{ p_chunk.x, p_chunk.y, p_chunk.z };
+}
+
+// Chunk coordinates are BigInt strings and voxel positions numbers; asBigInt() reads either.
+Vector3i vector3i_of(const crowdy::graphql::Json &p_coordinates) {
+	return Vector3i(static_cast<int32_t>(p_coordinates["x"].asBigInt()), static_cast<int32_t>(p_coordinates["y"].asBigInt()),
+			static_cast<int32_t>(p_coordinates["z"].asBigInt()));
+}
+
+// The edits a region read returned, one per voxel position, flattened over their chunks.
+Array voxels_of(const crowdy::graphql::Json &p_region) {
+	Array voxels;
+	p_region["chunks"].forEach([&voxels](const crowdy::graphql::Json &p_chunk) {
+		const Vector3i chunk = vector3i_of(p_chunk["coordinates"]);
+		p_chunk["voxels"].forEach([&voxels, &chunk](const crowdy::graphql::Json &p_voxel) {
+			PackedByteArray state;
+			if (const auto decoded = crowdy::core::base64Decode(p_voxel["state"].asStringView())) {
+				state = to_packed_bytes(crowdy::Bytes(decoded->data(), decoded->size()));
+			}
+			const std::string_view recorded_at = p_voxel["createdAt"].asStringView();
+			Dictionary entry;
+			entry["chunk"] = chunk;
+			entry["voxel"] = vector3i_of(p_voxel["location"]);
+			entry["voxel_type"] = p_voxel["voxelType"].asInt64();
+			entry["state"] = state;
+			entry["updated_at_ms"] = crowdy::core::parseIso8601Millis(recorded_at.data(), recorded_at.size());
+			entry["user_id"] = to_godot(p_voxel["createdBy"].asBigIntString());
+			voxels.push_back(entry);
+		});
+	});
+	return voxels;
+}
 
 const char *send_kind_name(SendKind p_kind) {
 	switch (p_kind) {
@@ -221,6 +267,10 @@ void CrowdyGameSession::stop() {
 		requests.resolve(reconnect_request_id, CrowdyResult::failure("CANCELLED", "The session was stopped while reconnecting."));
 		reconnect_request_id = 0;
 	}
+	for (const uint64_t id : voxel_fetch_ids) {
+		requests.resolve(id, CrowdyResult::failure("CANCELLED", "The session was stopped while fetching voxels."));
+	}
+	voxel_fetch_ids.clear();
 	if (world) {
 		// Every actor_joined is matched by an actor_left, so scenes can remove what they spawned.
 		world->actors().forEach([this](const crowdy::session::RemoteActor &p_actor) {
@@ -316,6 +366,11 @@ void CrowdyGameSession::create_world() {
 	config.onText = [this](const crowdy::replication::SpatialNotification &p_text) {
 		const String text = to_godot(std::string_view(reinterpret_cast<const char *>(p_text.payload.data()), p_text.payload.size()));
 		queue_signal("text_received", to_actor_id(p_text.uuid), text);
+	};
+	// Includes the server's echo of this player's own accepted edits.
+	config.onVoxel = [this](const crowdy::replication::SpatialNotification &p_notification, const crowdy::wire::VoxelPayloadView &p_voxel) {
+		queue_signal("voxel_updated", to_vector3i(p_notification.chunk), Vector3i(p_voxel.x, p_voxel.y, p_voxel.z), int64_t(p_voxel.voxelType),
+				to_packed_bytes(p_voxel.state), to_actor_id(p_notification.uuid));
 	};
 
 	if (settings.host_tracking) {
@@ -466,6 +521,47 @@ Error CrowdyGameSession::send_direct_message(const String &p_actor_id, const Vec
 	return record_send(game.connection->sendSingleActorMessage(to_chunk(p_chunk), target, as_bytes(p_payload)), SendKind::SingleActor);
 }
 
+Error CrowdyGameSession::send_voxel_update(const Vector3i &p_chunk, const Vector3i &p_voxel, int p_voxel_type, const PackedByteArray &p_state) {
+	const bool in_range = fits_int16(p_voxel.x) && fits_int16(p_voxel.y) && fits_int16(p_voxel.z) && fits_int16(p_voxel_type);
+	ERR_FAIL_COND_V_MSG(!in_range, ERR_INVALID_PARAMETER, "Voxel positions and types are from -32768 to 32767.");
+	ERR_FAIL_COND_V_MSG(p_state.size() > int64_t(crowdy::wire::voxel::kMaxStateSize), ERR_INVALID_PARAMETER, "A voxel state is at most 1024 bytes.");
+	const Error sendable = check_sendable();
+	if (sendable != OK) {
+		return sendable;
+	}
+	const crowdy::session::LocalActorStore &self = world->self();
+	return record_send(game.connection->sendVoxelUpdate(to_chunk(p_chunk), self.uuid(), static_cast<int16_t>(p_voxel.x), static_cast<int16_t>(p_voxel.y),
+							   static_cast<int16_t>(p_voxel.z), static_cast<int16_t>(p_voxel_type), as_bytes(p_state), settings.world.self.distance),
+			SendKind::VoxelUpdate);
+}
+
+Ref<CrowdyRequest> CrowdyGameSession::fetch_voxels(const Vector3i &p_low_chunk, const Vector3i &p_high_chunk) {
+	auto [id, request] = requests.create();
+	if (!world) {
+		requests.resolve(id, CrowdyResult::failure("NOT_STARTED", "fetch_voxels() needs a started session."));
+		return request;
+	}
+	int64_t chunk_count = 1;
+	for (int axis = 0; axis < 3; axis++) {
+		chunk_count *= std::llabs(int64_t(p_high_chunk[axis]) - int64_t(p_low_chunk[axis])) + 1;
+		if (chunk_count > MAX_FETCH_CHUNKS) {
+			requests.resolve(id, CrowdyResult::failure("INVALID_ARGUMENT", "fetch_voxels() reads at most 4913 chunks, a box of 17 x 17 x 17."));
+			return request;
+		}
+	}
+	// One page holding every chunk of the box.
+	crowdy::domains::ChunkRegion box = crowdy::domains::ChunkRegion::box(to_chunk_ref(p_low_chunk), to_chunk_ref(p_high_chunk));
+	box.limit(chunk_count);
+	voxel_fetch_ids.insert(id);
+	game.client->voxels().listInRegionAsync(game.token.appId, box, [this, id](GraphQLOutcome p_outcome) {
+		if (voxel_fetch_ids.erase(id) == 0) {
+			return;
+		}
+		requests.resolve(id, p_outcome.ok() ? CrowdyResult::success(voxels_of(p_outcome.data)) : CrowdyResult::failure_from(p_outcome));
+	});
+	return request;
+}
+
 bool CrowdyGameSession::is_reconnecting() const {
 	return reconnect_request_id != 0;
 }
@@ -532,6 +628,9 @@ void CrowdyGameSession::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("send_channel_message", "channel_id", "payload"), &CrowdyGameSession::send_channel_message);
 	ClassDB::bind_method(D_METHOD("send_direct_message", "actor_id", "chunk", "payload"), &CrowdyGameSession::send_direct_message);
 
+	ClassDB::bind_method(D_METHOD("send_voxel_update", "chunk", "voxel", "voxel_type", "state"), &CrowdyGameSession::send_voxel_update, DEFVAL(PackedByteArray()));
+	ClassDB::bind_method(D_METHOD("fetch_voxels", "low_chunk", "high_chunk"), &CrowdyGameSession::fetch_voxels);
+
 	ClassDB::bind_method(D_METHOD("is_host"), &CrowdyGameSession::is_host);
 	ClassDB::bind_method(D_METHOD("get_host_user_id"), &CrowdyGameSession::get_host_user_id);
 	ClassDB::bind_method(D_METHOD("get_stats"), &CrowdyGameSession::get_stats);
@@ -554,6 +653,8 @@ void CrowdyGameSession::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("text_received", PropertyInfo(Variant::STRING, "sender_id"), PropertyInfo(Variant::STRING, "text")));
 	ADD_SIGNAL(MethodInfo("channel_message_received", PropertyInfo(Variant::INT, "channel_id"), PropertyInfo(Variant::STRING, "sender_id"), payload));
 	ADD_SIGNAL(MethodInfo("direct_message_received", payload));
+	ADD_SIGNAL(MethodInfo("voxel_updated", chunk, PropertyInfo(Variant::VECTOR3I, "voxel"), PropertyInfo(Variant::INT, "voxel_type"),
+			PropertyInfo(Variant::PACKED_BYTE_ARRAY, "state"), PropertyInfo(Variant::STRING, "sender_id")));
 	ADD_SIGNAL(MethodInfo("host_changed", PropertyInfo(Variant::STRING, "host_user_id")));
 	ADD_SIGNAL(MethodInfo("send_rejected", PropertyInfo(Variant::STRING, "error_code"), PropertyInfo(Variant::STRING, "send_kind")));
 }

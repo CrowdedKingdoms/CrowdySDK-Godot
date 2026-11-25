@@ -1,7 +1,8 @@
 class_name ArenaHud
 extends CanvasLayer
-## The arena's on-screen text: this player's stats, the mode and who is on the platform, a banner
-## for what matters right now, and a feed of falls, wins and arrivals.
+## The arena's on-screen text: this player's stats, the arena's records, where the arena is and
+## who is on the platform, a banner for what matters right now, and a feed of falls, wins,
+## records and arrivals.
 
 ## The feed shows at most FEED_LENGTH lines, each for FEED_LINE_TIME seconds before it fades.
 const FEED_LENGTH := 6
@@ -11,6 +12,8 @@ const FEED_LINE_TIME := 8.0
 @export var feed_line_settings: LabelSettings
 
 @onready var stats_label: Label = %StatsLabel
+@onready var records_panel: PanelContainer = %RecordsPanel
+@onready var records_label: Label = %RecordsLabel
 @onready var arena_label: Label = %ArenaLabel
 @onready var banner_label: Label = %BannerLabel
 @onready var feed: VBoxContainer = %Feed
@@ -32,18 +35,24 @@ func show_stats(stats: PlayerStats) -> void:
 	])
 
 
-## Shows the mode, the round and how many of [param player_count] players are on the platform.
-## [param can_switch_mode] adds how to switch the mode.
-func show_arena(state: ArenaState, players_on_platform: int, player_count: int, can_switch_mode: bool) -> void:
-	var lines := PackedStringArray()
-	if state.mode == ArenaState.Mode.ROUNDS:
-		lines.append("Rounds: round %d" % state.round_number)
-	else:
-		lines.append("Endless")
-	lines.append("%d of %d on the platform" % [players_on_platform, player_count])
-	if can_switch_mode:
-		lines.append("M switches the mode")
-	arena_label.text = "\n".join(lines)
+## Shows the records panel, which stays hidden offline.
+func show_records(records: ArenaRecords) -> void:
+	var lines := PackedStringArray(["Records"])
+	for stat: ArenaRecords.Stat in ArenaRecords.Stat.values():
+		var holder := records.holders[stat]
+		var value := records.values[stat]
+		var timed := stat == ArenaRecords.Stat.LONGEST_RUN or stat == ArenaRecords.Stat.TIME_ALONE
+		var shown := _clock(value) if timed else str(roundi(value))
+		lines.append("%s\t%s" % [ArenaRecords.NAMES[stat], "-" if holder.is_empty() else "%s  %s" % [shown, holder]])
+	records_label.text = "\n".join(lines)
+	records_panel.show()
+
+
+## Shows where the arena is ([param location]), its mode and round, and how many of
+## [param player_count] players are on the platform.
+func show_arena(mode: MatchConfig.Mode, state: ArenaState, players_on_platform: int, player_count: int, location: String) -> void:
+	var rules := "Rounds: round %d" % state.round_number if mode == MatchConfig.Mode.ROUNDS else "Endless"
+	arena_label.text = "%s\n%s\n%d of %d on the platform" % [location, rules, players_on_platform, player_count]
 
 
 func show_banner(text: String) -> void:

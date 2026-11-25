@@ -77,7 +77,7 @@ func _enter_world() -> void:
 	if not started.ok:
 		_show_failure("Could not join the world", started)
 		return
-	get_tree().change_scene_to_file(demo.world_scene)
+	get_tree().change_scene_to_file(demo.world_scene if demo.online_scene.is_empty() else demo.online_scene)
 
 
 func _show_legal_documents() -> void:

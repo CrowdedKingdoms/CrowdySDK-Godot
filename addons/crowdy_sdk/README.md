@@ -3,7 +3,7 @@
 Crowded Kingdoms accounts and realtime multiplayer for Godot 4.7, as a GDExtension over
 [CrowdyCPP](https://github.com/CrowdedKingdoms/CrowdyCPP) (v0.93). It wraps the native UDP
 replication client and CrowdyCPP's `WorldSession`, so a game gets presence, remote-actor tracking,
-events and chat without writing netcode bookkeeping.
+events, chat and stored voxel state without writing netcode bookkeeping.
 
 ## Install
 
@@ -124,6 +124,8 @@ Created with `CrowdyIdentity.create(api_url, persist_session)`; `Crowdy.identity
 | `send_text(text) -> Error` | Proximity chat. |
 | `send_channel_message(channel_id, payload) -> Error` | To a channel the player is a member of. |
 | `send_direct_message(actor_id, chunk, payload) -> Error` | To one actor. The receiver is not told the sender; put it in the payload. |
+| `send_voxel_update(chunk, voxel, voxel_type, state := PackedByteArray()) -> Error` | Stores one voxel edit in `chunk` and sends it to nearby actors. See [Voxels](#voxels). |
+| `fetch_voxels(low_chunk, high_chunk) -> CrowdyRequest` | The stored voxel edits of a box of chunks. See [Voxels](#voxels). |
 | `is_host()`, `get_host_user_id()` | With `host_tracking` on. |
 | `get_stats() -> Dictionary` | Local traffic counters for a debug overlay (not billing figures). |
 
@@ -131,11 +133,34 @@ Signals: `state_changed(state)`, `actor_joined(actor_id, chunk, state)`,
 `actor_updated(actor_id, chunk, state, server_time_ms)`, `actor_left(actor_id)`,
 `event_received(event_type, sender_id, payload, from_server)`, `text_received(sender_id, text)`,
 `channel_message_received(channel_id, sender_id, payload)`, `direct_message_received(payload)`,
-`host_changed(host_user_id)`, `send_rejected(error_code, send_kind)`.
+`voxel_updated(chunk, voxel, voxel_type, state, sender_id)`, `host_changed(host_user_id)`,
+`send_rejected(error_code, send_kind)`.
 
 `actor_updated` also follows every `actor_joined`. `send_rejected` reports a send the server
 refused, e.g. `UNAUTHORIZED` for text in an app without the text-chat permission; `send_kind` is
-`actor_update`, `event`, `text`, `channel_message`, `direct_message`, or `unknown`.
+`actor_update`, `event`, `text`, `channel_message`, `direct_message`, `voxel_update`, or
+`unknown`.
+
+#### Voxels
+
+Voxel edits are the world's stored state: each one persists in its chunk, and any player of the
+app can read it. A game that draws no blocks can still store a place's data in them, such as a
+match's rules or an arena's records (see `demos/push_arena`).
+
+- `send_voxel_update(chunk, voxel, voxel_type, state)` stores one edit and sends it to the actors
+  near `chunk`. Positions and types are any value from -32768 to 32767 (a block game uses 0–15 on
+  each axis), and `state` is at most 1024 bytes. A newer edit at the same position replaces the
+  older one. Writing needs `update_voxel_data` on the chunk: a new app grants it to every player,
+  but a closed wilderness, another player's claim or a zone can refuse it (`send_rejected` with
+  `UNAUTHORIZED`).
+- `voxel_updated` reports the edits near the local actor as they happen, this player's own
+  included once the server has accepted them.
+- `fetch_voxels(low_chunk, high_chunk)` reads the stored edits of every chunk in a box, corners
+  included, at most 4,913 chunks (17 × 17 × 17). `data` is an Array with one Dictionary per voxel
+  position: `{chunk, voxel, voxel_type, state, updated_at_ms, user_id}`, where `updated_at_ms` is
+  when the platform recorded the edit (Unix milliseconds) and `user_id` is who made it.
+
+Chunk-level state (`chunkState`) is not wrapped: only app admins (`manage_apps`) may write it.
 
 ### `CrowdySessionConfig`
 
@@ -146,6 +171,7 @@ A `Resource` (create it in the FileSystem dock) with `chunk_size`, `send_rate_hz
 
 ## Not wrapped yet
 
-CrowdyCPP has more than this extension exposes: voxel chunks (`ChunkStore`), voice and video,
-channel and team management, the Game Kit (matchmaking, lobbies, leaderboards on ck-exec) and
-social sign-in. Each fits as another class beside `CrowdyIdentity` and `CrowdyGameSession`.
+CrowdyCPP has more than this extension exposes: the voxel grid store (`ChunkStore`: dense
+16 × 16 × 16 grids, loading them around the player, writing them back), grid claims, voice and
+video, channel and team management, the Game Kit (matchmaking, lobbies, leaderboards on ck-exec)
+and social sign-in. Each fits as another class beside `CrowdyIdentity` and `CrowdyGameSession`.

@@ -1,10 +1,11 @@
 class_name Referee
 extends Node
 ## Keeps the arena's rules. The platform's size follows how many players stand on it, and in
-## Rounds mode a player who stands on it alone for WIN_TIME wins the round. The host (or the
-## offline player) decides; everyone else adopts the host's broadcasts, so all see the same arena.
+## Rounds mode a player who stands on it alone for WIN_TIME wins the round. One player of the
+## match decides (see PushArena); everyone else adopts the states they broadcast, so all see the
+## same arena.
 
-## The arena state changed: decided here, or adopted from the host.
+## The arena state changed: decided here, or adopted from the referee.
 signal state_changed(previous: ArenaState)
 
 ## The platform's radius is MIN_RADIUS plus RADIUS_PER_PLAYER times the square root of the
@@ -19,6 +20,8 @@ const CELEBRATION_TIME := 4.0
 ## WIN_TIME, so the last player standing can win before the others return.
 const RESPAWN_DELAY := 4.0
 
+## The match's mode, set before the first decision.
+var mode := MatchConfig.Mode.ENDLESS
 ## The arena's current state on this client.
 var state := ArenaState.new()
 
@@ -35,24 +38,16 @@ func _init() -> void:
 
 
 ## Decides the next state from the players on the platform ([param alive_ids]) and the number of
-## players in the arena. Only the host calls it, every physics frame.
+## players in the arena. Only the referee calls it, every physics frame.
 func decide(delta: float, alive_ids: PackedStringArray, player_count: int) -> void:
 	var next := state.copy()
 	next.platform_radius = platform_radius_for(alive_ids.size())
-	if next.mode == ArenaState.Mode.ROUNDS:
+	if mode == MatchConfig.Mode.ROUNDS:
 		_decide_round(next, delta, alive_ids, player_count)
 	_change_state(next)
 
 
-## Switches between Rounds and Endless, starting a fresh round. Only the host calls it.
-func switch_mode() -> void:
-	var next := state.copy()
-	next.mode = ArenaState.Mode.ENDLESS if next.mode == ArenaState.Mode.ROUNDS else ArenaState.Mode.ROUNDS
-	_start_next_round(next)
-	_change_state(next)
-
-
-## Takes the state the host broadcast.
+## Takes the state the referee broadcast.
 func adopt(received: ArenaState) -> void:
 	_change_state(received)
 

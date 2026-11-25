@@ -7,4 +7,5 @@
 script = ExtResource("1_demo_info")
 title = "Push Arena"
 world_scene = "res://demos/push_arena/arena.tscn"
+online_scene = "res://demos/push_arena/lobby/arena_lobby.tscn"
 session_config = ExtResource("2_session_config")

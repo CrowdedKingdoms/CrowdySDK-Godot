@@ -22,13 +22,14 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_set>
 
 namespace crowdy_godot {
 
 // One player's realtime presence in an app's world: the native UDP replication connection and
 // CrowdyCPP's WorldSession over it. The session sends the local actor's state at a fixed rate
-// (send-on-change, keyframes, idle heartbeats), tracks every remote actor in range and routes
-// events and messages.
+// (send-on-change, keyframes, idle heartbeats), tracks every remote actor in range, routes
+// events and messages, and sends, receives and reads voxel edits (the world's stored state).
 //
 // The object lives as long as the game wants: start() and stop() can repeat, and connected
 // signals stay connected across them. Call poll() once per frame on the main thread; every
@@ -65,6 +66,9 @@ public:
 	godot::Error send_text(const godot::String &p_text);
 	godot::Error send_channel_message(int64_t p_channel_id, const godot::PackedByteArray &p_payload);
 	godot::Error send_direct_message(const godot::String &p_actor_id, const godot::Vector3i &p_chunk, const godot::PackedByteArray &p_payload);
+
+	godot::Error send_voxel_update(const godot::Vector3i &p_chunk, const godot::Vector3i &p_voxel, int p_voxel_type, const godot::PackedByteArray &p_state);
+	godot::Ref<CrowdyRequest> fetch_voxels(const godot::Vector3i &p_low_chunk, const godot::Vector3i &p_high_chunk);
 
 	bool is_host() const;
 	godot::String get_host_user_id() const;
@@ -111,6 +115,9 @@ private:
 	// start_request_id 0 was stopped and is dropped.
 	uint64_t start_request_id = 0;
 	uint64_t reconnect_request_id = 0;
+	// fetch_voxels() requests waiting for the session's client. stop() releases the client, and
+	// their answers with it, so it cancels them.
+	std::unordered_set<uint64_t> voxel_fetch_ids;
 	Settings settings;
 
 	// Destroyed in reverse order: the world before the host election and the connection it

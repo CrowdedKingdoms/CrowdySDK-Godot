@@ -36,7 +36,7 @@ not reload the library while running. The extension targets the Godot 4.7 API
 |---|---|
 | `register_types.cpp` | Entry point: registers the classes below. |
 | `crowdy_identity.*` | `CrowdyIdentity`: sign-in, the gates a new account passes, app-token mint. |
-| `crowdy_game_session.*` | `CrowdyGameSession`: the realtime session (CrowdyCPP's `startGameSession` and `WorldSession`) as signals. |
+| `crowdy_game_session.*` | `CrowdyGameSession`: the realtime session (CrowdyCPP's `startGameSession` and `WorldSession`) as signals, and voxel edits sent, heard and read. |
 | `crowdy_request.*`, `crowdy_result.*` | `CrowdyRequest` (awaitable) and `CrowdyResult`; `PendingRequests` tracks a class's open requests. |
 | `crowdy_app_token.*` | `CrowdyAppToken`: the opaque token passed from identity to session. |
 | `async_host_election.*` | Host election that does not block the main thread. |
