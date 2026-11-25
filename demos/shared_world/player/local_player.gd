@@ -23,7 +23,7 @@ func _input(event) -> void:
 
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
-			get_tree().quit()
+			MainMenu.open(get_tree())
 
 func _physics_process(delta: float) -> void:
 	var input_dir := Input.get_vector(

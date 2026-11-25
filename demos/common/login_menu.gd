@@ -1,8 +1,9 @@
+class_name LoginMenu
 extends Control
-## Signs the player in (or registers them) and starts the Crowdy session before loading the map,
-## so every refusal is shown here, where the player can act on it.
+## Signs the player in (or registers them) and starts the Crowdy session of the demo picked in the
+## main menu before loading it, so every refusal is shown here, where the player can act on it.
 
-const SESSION_CONFIG := preload("res://demos/shared_world/session_config.tres")
+const SCENE_PATH := "res://demos/common/login_menu.tscn"
 
 ## Friendlier text for the refusals a player can act on; others show the server's message.
 const MESSAGES := {
@@ -11,6 +12,9 @@ const MESSAGES := {
 	"AGE_REQUIRED": "This account needs a birth date before it can play.",
 }
 
+## The demo to sign in for, set by [method open] before the menu enters the tree.
+var demo: DemoInfo
+
 @onready var email_field: LineEdit = $VBoxContainer/InputFields/EmailField
 @onready var password_field: LineEdit = $VBoxContainer/InputFields/PasswordField
 @onready var status_label: Label = $VBoxContainer/Status
@@ -18,16 +22,23 @@ const MESSAGES := {
 @onready var accept_documents: CheckBox = $VBoxContainer/AcceptDocuments
 
 
+## Shows the login menu for [param picked_demo].
+static func open(tree: SceneTree, picked_demo: DemoInfo) -> void:
+	var menu: LoginMenu = load(SCENE_PATH).instantiate()
+	menu.demo = picked_demo
+	tree.change_scene_to_node(menu)
+
+
 func _ready() -> void:
 	if Crowdy.identity.is_signed_in():
-		status_label.text = "Signed in. Press Login to play."
+		status_label.text = "Signed in. Press Login to play %s." % demo.title
 	else:
-		status_label.text = "Ready"
+		status_label.text = "Sign in to play %s." % demo.title
 	_show_legal_documents()
 
 
 func _on_btn_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://demos/shared_world/main_menu.tscn")
+	MainMenu.open(get_tree())
 
 
 func _on_btn_login_pressed() -> void:
@@ -62,11 +73,11 @@ func _enter_world() -> void:
 			_show_failure("Could not record your acceptance", accepted)
 			return
 
-	var started: CrowdyResult = await Crowdy.start_session(SESSION_CONFIG)
+	var started: CrowdyResult = await Crowdy.start_session(demo.session_config)
 	if not started.ok:
 		_show_failure("Could not join the world", started)
 		return
-	get_tree().change_scene_to_file("res://demos/shared_world/world.tscn")
+	get_tree().change_scene_to_file(demo.world_scene)
 
 
 func _show_legal_documents() -> void:

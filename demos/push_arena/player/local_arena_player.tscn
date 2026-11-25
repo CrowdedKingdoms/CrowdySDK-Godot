@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://demos/push_arena/player/arena_player.tscn" id="1_base"]
+[ext_resource type="Script" path="res://demos/push_arena/player/local_arena_player.gd" id="2_script"]
+
+[node name="LocalArenaPlayer" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+
+[node name="CameraPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot"]
+collision_mask = 1
+spring_length = 5.0
+margin = 0.5
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D"]
+current = true
+fov = 65.0

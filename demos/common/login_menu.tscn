@@ -1,32 +1,7 @@
 [gd_scene format=3 uid="uid://duifhtxrsnnnm"]
 
-[ext_resource type="Script" uid="uid://ce0nihjq7ha0r" path="res://demos/shared_world/login_menu.gd" id="1_1qxh4"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mr64h"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(0.1, 0.1, 0.1, 0.6)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-corner_detail = 5
-shadow_size = 5
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u8sew"]
-content_margin_left = 4.0
-content_margin_top = 4.0
-content_margin_right = 4.0
-content_margin_bottom = 4.0
-bg_color = Color(1.353256, 1.353256, 1.353256, 0.6)
-corner_radius_top_left = 16
-corner_radius_top_right = 16
-corner_radius_bottom_right = 16
-corner_radius_bottom_left = 16
-corner_detail = 5
-shadow_size = 5
+[ext_resource type="Script" uid="uid://ce0nihjq7ha0r" path="res://demos/common/login_menu.gd" id="1_1qxh4"]
+[ext_resource type="Theme" path="res://demos/common/menu_theme.tres" id="2_theme"]
 
 [node name="LoginMenu" type="Control" unique_id=214862278]
 layout_mode = 3
@@ -35,6 +10,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_1qxh4")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=865231555]
@@ -102,33 +78,20 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 30
-theme_override_styles/normal = SubResource("StyleBoxFlat_mr64h")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_mr64h")
-theme_override_styles/hover = SubResource("StyleBoxFlat_u8sew")
+theme_type_variation = &"LargeButton"
 text = "Login"
 
 [node name="BtnRegister" type="Button" parent="VBoxContainer/Buttons" unique_id=889806529]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 30
-theme_override_styles/normal = SubResource("StyleBoxFlat_mr64h")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_mr64h")
-theme_override_styles/hover = SubResource("StyleBoxFlat_u8sew")
+theme_type_variation = &"LargeButton"
 text = "Register"
 
 [node name="BtnBack" type="Button" parent="VBoxContainer" unique_id=210413664]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 30
-theme_override_styles/normal = SubResource("StyleBoxFlat_mr64h")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_mr64h")
-theme_override_styles/hover = SubResource("StyleBoxFlat_u8sew")
-text = "Back
-"
+theme_type_variation = &"LargeButton"
+text = "Back"
 
 [connection signal="meta_clicked" from="VBoxContainer/Documents" to="." method="_on_documents_meta_clicked"]
 [connection signal="pressed" from="VBoxContainer/Buttons/BtnLogin" to="." method="_on_btn_login_pressed"]

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cj23t62puuypf"]
 
 [ext_resource type="Script" uid="uid://bgwiv2sa05vhh" path="res://demos/shared_world/player/player.gd" id="1_q3lat"]
-[ext_resource type="PackedScene" uid="uid://b7kk8g8wgpfub" path="res://demos/shared_world/assets/UAL1_Standard.glb" id="2_tok1r"]
+[ext_resource type="PackedScene" uid="uid://b7kk8g8wgpfub" path="res://demos/common/assets/UAL1_Standard.glb" id="2_tok1r"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_l2ndj"]
 

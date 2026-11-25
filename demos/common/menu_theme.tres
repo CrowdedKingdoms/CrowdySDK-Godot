@@ -1,0 +1,37 @@
+[gd_resource type="Theme" format=3]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ngpci"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(1.353256, 1.353256, 1.353256, 0.6)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+corner_detail = 5
+shadow_size = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0l3xs"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+corner_detail = 5
+shadow_size = 5
+
+[resource]
+LargeButton/base_type = &"Button"
+LargeButton/colors/font_color = Color(1, 1, 1, 1)
+LargeButton/font_sizes/font_size = 30
+LargeButton/styles/hover = SubResource("StyleBoxFlat_ngpci")
+LargeButton/styles/normal = SubResource("StyleBoxFlat_0l3xs")
+LargeButton/styles/pressed = SubResource("StyleBoxFlat_0l3xs")
+LargeLabel/base_type = &"Label"
+LargeLabel/font_sizes/font_size = 30
